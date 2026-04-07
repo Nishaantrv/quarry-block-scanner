@@ -136,22 +136,22 @@ export default function FinishDetailsPage() {
             </header>
 
             {/* Summary pill */}
-            <GlassContainer className="mb-6 p-4 flex items-center justify-between bg-primary/5 border-primary/20">
-                <div className="text-center">
-                    <div className="text-[10px] uppercase font-bold text-muted-foreground">Blocks</div>
-                    <div className="text-2xl font-black text-primary">{totals.totalBlocks}</div>
+            <GlassContainer className="mb-6 p-4 grid grid-cols-2 sm:flex sm:items-center sm:justify-between gap-y-4 gap-x-2 bg-primary/5 border-primary/20">
+                <div className="text-center sm:text-left">
+                    <div className="text-[9px] sm:text-[10px] uppercase font-bold text-muted-foreground">Blocks</div>
+                    <div className="text-xl sm:text-2xl font-black text-primary">{totals.totalBlocks}</div>
                 </div>
-                <div className="text-center">
-                    <div className="text-[10px] uppercase font-bold text-muted-foreground">Net CBM</div>
-                    <div className="text-2xl font-black text-primary">{totals.totalNetCbm.toFixed(3)}</div>
+                <div className="text-center sm:text-left">
+                    <div className="text-[9px] sm:text-[10px] uppercase font-bold text-muted-foreground">Net CBM</div>
+                    <div className="text-xl sm:text-2xl font-black text-primary">{totals.totalNetCbm.toFixed(3)}</div>
                 </div>
-                <div className="text-center">
-                    <div className="text-[10px] uppercase font-bold text-muted-foreground">Gross CBM</div>
-                    <div className="text-2xl font-black text-primary">{totals.totalGrossCbm.toFixed(3)}</div>
+                <div className="text-center sm:text-left">
+                    <div className="text-[9px] sm:text-[10px] uppercase font-bold text-muted-foreground">Gross CBM</div>
+                    <div className="text-xl sm:text-2xl font-black text-primary">{totals.totalGrossCbm.toFixed(3)}</div>
                 </div>
-                <div className="text-center">
-                    <div className="text-[10px] uppercase font-bold text-muted-foreground">Value</div>
-                    <div className="text-2xl font-black text-primary">{totals.totalValue.toLocaleString()}</div>
+                <div className="text-center sm:text-left">
+                    <div className="text-[9px] sm:text-[10px] uppercase font-bold text-muted-foreground">Value</div>
+                    <div className="text-xl sm:text-2xl font-black text-primary truncate italic">{totals.totalValue.toLocaleString()}</div>
                 </div>
             </GlassContainer>
 

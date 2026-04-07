@@ -90,11 +90,11 @@ export default function AbstractViewPage() {
                 <Button 
                     onClick={handleSave} 
                     disabled={isSaving}
-                    className="rounded-full px-6 font-bold shadow-lg shadow-primary/20 gap-2"
+                    className="rounded-full px-4 sm:px-6 font-bold shadow-lg shadow-primary/20 gap-2 h-10"
                 >
                     {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                    <span className="hidden sm:inline">Save Changes</span>
-                    <span className="sm:hidden">Save</span>
+                    <span className="hidden xs:inline sm:inline">Save Changes</span>
+                    <span className="xs:hidden">Save</span>
                 </Button>
             </header>
 
@@ -106,8 +106,8 @@ export default function AbstractViewPage() {
                         </h2>
                     </div>
 
-                    <div className="overflow-x-auto overflow-y-hidden selection:bg-primary/20">
-                        <table className="w-full border-collapse min-w-[1000px] text-[11px]">
+                    <div className="overflow-x-auto overflow-y-hidden selection:bg-primary/20 touch-pan-x">
+                        <table className="w-full border-collapse min-w-[900px] text-[11px]">
                             <thead>
                                 <tr className="bg-zinc-100 uppercase font-black tracking-wider text-zinc-500 border-b-2 border-zinc-300">
                                     <th className="p-3 border border-zinc-300 text-center w-12" rowSpan={2}>SL</th>
@@ -167,7 +167,7 @@ export default function AbstractViewPage() {
                                                     type="number" 
                                                     value={b.l1} 
                                                     onChange={(e) => handleCellChange(b.id, 'l1', e.target.value)}
-                                                    className="w-full h-8 text-center bg-transparent border-none focus:ring-2 focus:ring-primary/20 font-medium tabular-nums"
+                                                    className="w-full h-8 text-center bg-white/50 border-none focus:ring-1 focus:ring-primary/30 font-medium tabular-nums appearance-none"
                                                 />
                                             </td>
                                             <td className="p-0 border border-zinc-200">
@@ -175,7 +175,7 @@ export default function AbstractViewPage() {
                                                     type="number" 
                                                     value={b.l2} 
                                                     onChange={(e) => handleCellChange(b.id, 'l2', e.target.value)}
-                                                    className="w-full h-8 text-center bg-transparent border-none focus:ring-2 focus:ring-red-100 font-black text-red-600 tabular-nums"
+                                                    className="w-full h-8 text-center bg-red-50/30 border-none focus:ring-1 focus:ring-red-200 font-black text-red-600 tabular-nums appearance-none"
                                                 />
                                             </td>
                                             <td className="p-0 border border-zinc-200">
@@ -183,7 +183,7 @@ export default function AbstractViewPage() {
                                                     type="number" 
                                                     value={b.l3} 
                                                     onChange={(e) => handleCellChange(b.id, 'l3', e.target.value)}
-                                                    className="w-full h-8 text-center bg-transparent border-none focus:ring-2 focus:ring-primary/20 font-medium tabular-nums"
+                                                    className="w-full h-8 text-center bg-white/50 border-none focus:ring-1 focus:ring-primary/30 font-medium tabular-nums appearance-none"
                                                 />
                                             </td>
                                             
@@ -207,7 +207,7 @@ export default function AbstractViewPage() {
                                                         type="number"
                                                         value={allowance}
                                                         onChange={(e) => handleCellChange(b.id, 'allowance', e.target.value)}
-                                                        className="flex-1 text-center bg-transparent border-none text-[9px] font-black tabular-nums focus:ring-0"
+                                                        className="flex-1 text-center bg-white/40 border-none text-[9px] font-black tabular-nums focus:ring-0 appearance-none"
                                                     />
                                                 </div>
                                             </td>

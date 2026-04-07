@@ -318,27 +318,28 @@ export default function MarkingPage() {
       <div className="flex-1 flex flex-col px-4 max-w-md mx-auto w-full">
 
         {/* STATUS BAR */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <div className={cn("px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-2", isEditing ? "bg-amber-500/10 text-amber-500 border border-amber-500/20" : "bg-primary/10 text-primary border border-primary/20")}>
+        <div className="flex flex-wrap items-center justify-between gap-y-3 gap-x-2 mb-4">
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <div className={cn("px-3 py-1.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wide flex items-center gap-2", isEditing ? "bg-amber-500/10 text-amber-500 border border-amber-500/20" : "bg-primary/10 text-primary border border-primary/20 shadow-sm")}>
               {isEditing ? <Edit3 className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
               {isEditing ? `Modifying #${currentIndex + 1}` : `New Block #${blocks.length + 1}`}
             </div>
 
-            <div className="flex items-center gap-1.5 bg-card/50 px-3 py-1 rounded-full border border-border shadow-sm">
-              <span className="text-[10px] font-black uppercase text-muted-foreground mr-1">Allw:</span>
+            <div className="flex items-center gap-1.5 bg-card/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-border shadow-md">
+              <span className="text-[9px] font-black uppercase text-muted-foreground mr-1">Allw:</span>
               <input 
                 type="number"
                 value={sessionAllowance}
                 onChange={(e) => setSessionAllowance(e.target.value)}
                 placeholder={String(inspection.header.allowanceSmall || 15)}
-                className="w-10 bg-transparent border-none focus:ring-0 text-xs font-bold text-primary p-0 h-auto tabular-nums"
+                className="w-12 bg-transparent border-none focus:ring-0 text-xs font-black text-primary p-0 h-auto tabular-nums placeholder:opacity-50"
               />
+              <span className="text-[8px] font-bold text-muted-foreground/50">cm</span>
             </div>
           </div>
 
           {previewNetCbm && (
-            <div className="text-xs font-bold text-muted-foreground animate-in fade-in">
+            <div className="text-xs font-black text-primary bg-primary/5 px-3 py-1.5 rounded-full border border-primary/10 animate-in fade-in slide-in-from-right-2">
               ~{previewNetCbm} m³
             </div>
           )}
@@ -351,7 +352,7 @@ export default function MarkingPage() {
             {String(displayBlockNo)}
           </div>
 
-          <div className="z-10 w-full flex flex-col items-center py-4 scale-90">
+          <div className="z-10 w-full flex flex-col items-center py-2 sm:py-4 scale-75 sm:scale-90 origin-center transition-transform">
             <ObliqueBlockViews
               length={parseFloat(l1) || 0}
               height={parseFloat(l2) || 0}
