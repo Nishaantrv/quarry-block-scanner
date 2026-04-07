@@ -17,9 +17,42 @@ export default function FinishDetailsPage() {
     const updateHeader = useInspectionStore((s) => s.updateHeader);
     const finishInspection = useInspectionStore((s) => s.finishInspection);
 
-    const { register, handleSubmit } = useForm<InspectionHeader>({
+    const { register, handleSubmit, watch } = useForm<InspectionHeader>({
         defaultValues: inspection?.header ?? {},
     });
+
+    // Auto-save on every change
+    const formValues = watch();
+    React.useEffect(() => {
+        if (!inspection) return;
+        
+        const data = { ...formValues };
+        const numericFields: (keyof InspectionHeader)[] = [
+            'pricePerCbm',
+            'allowanceSmall',
+            'allowanceLarge',
+            'allowanceOther',
+            'startingBlockNumber'
+        ];
+
+        numericFields.forEach(field => {
+            if (data[field] !== undefined && data[field] !== '' && typeof data[field] === 'string') {
+                // @ts-ignore
+                data[field] = Number(data[field]);
+            }
+        });
+
+        if (data.allowanceSmall !== undefined) {
+            data.allowance = Number(data.allowanceSmall);
+        }
+
+        // Debounced update to store
+        const timer = setTimeout(() => {
+            updateHeader({ ...inspection.header, ...data });
+        }, 1000);
+
+        return () => clearTimeout(timer);
+    }, [formValues, inspection?.id, updateHeader]);
 
     React.useEffect(() => {
         if (!inspection) navigate('/');

@@ -8,6 +8,8 @@ import { format, isToday, subDays, startOfDay, endOfDay, isWithinInterval } from
 import { GlassContainer } from '@/components/ui/glass-container';
 import { MobileCard } from '@/components/ui/mobile-card';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { CustomerSelect } from '@/components/CustomerSelect';
+import { Users } from 'lucide-react';
 
 export function Dashboard() {
     const navigate = useNavigate();
@@ -107,6 +109,25 @@ export function Dashboard() {
                     </div>
                 </GlassContainer>
             </div>
+
+            {/* CUSTOMER ACTION CARD */}
+            <div className="grid grid-cols-1 gap-3">
+                <GlassContainer className="p-4 flex items-center justify-between group cursor-pointer hover:bg-primary/5 transition-all" onClick={() => navigate('/my-account')}>
+                <div className="flex items-center gap-3">
+                        <div className="bg-primary/10 p-2.5 rounded-xl border border-primary/20">
+                            <Users className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                            <p className="text-xs font-bold uppercase tracking-widest text-foreground">Customer Directory</p>
+                            <p className="text-[10px] text-muted-foreground font-medium">{useInspectionStore.getState().customers.length} saved partners</p>
+                        </div>
+                    </div>
+                    <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                </GlassContainer>
+            </div>
+
+            {/* CUSTOMER SELECT */}
+            <CustomerSelect />
 
             {/* MAIN ACTION */}
             <Button

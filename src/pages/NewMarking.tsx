@@ -15,12 +15,27 @@ export default function NewMarking() {
   const navigate = useNavigate();
   const startNewInspection = useInspectionStore((s) => s.startNewInspection);
   const companyProfile = useInspectionStore((s) => s.companyProfile);
+  const customers = useInspectionStore((s) => s.customers);
+  const selectedCustomerId = useInspectionStore((s) => s.selectedCustomerId);
+  
+  const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
 
   const { register, handleSubmit, watch, setValue } = useForm<InspectionHeader>({
     defaultValues: {
       ...DEFAULT_HEADER,
-      currency: companyProfile.defaultCurrency || 'USD',
+      // User Profile Defaults
       portOfLoading: companyProfile.defaultPortOfLoading || '',
+      // Customer Defaults (Override Profile)
+      consignee: selectedCustomer?.name || '',
+      consigneeAddress: selectedCustomer?.address || '',
+      consigneePhone: selectedCustomer?.phone || '',
+      portOfDischarge: selectedCustomer?.defaultPortOfDischarge || '',
+      finalDestination: selectedCustomer?.defaultFinalDestination || '',
+      finalDestinationCountry: selectedCustomer?.defaultFinalDestinationCountry || '',
+      termsOfDelivery: selectedCustomer?.defaultTermsOfDelivery || 'FOB',
+      termsOfPayment: selectedCustomer?.defaultTermsOfPayment || '',
+      hsCode: selectedCustomer?.defaultHsCode || '',
+      currency: selectedCustomer?.defaultCurrency || companyProfile.defaultCurrency || 'USD',
     },
   });
 

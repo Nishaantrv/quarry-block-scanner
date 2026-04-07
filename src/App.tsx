@@ -7,6 +7,7 @@ import { Loader2, RefreshCcw } from "lucide-react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { BottomNav } from "@/components/BottomNav";
+import { SyncStatus } from "@/components/SyncStatus";
 import { useAuth, AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import NewMarking from "./pages/NewMarking";
@@ -103,6 +104,7 @@ const AppRoutes = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </ErrorBoundary>
+      <SyncStatus />
       {user && <BottomNav />}
     </div>
   );

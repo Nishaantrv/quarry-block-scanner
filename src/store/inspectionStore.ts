@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Block, CompanyProfile, Inspection, InspectionHeader, InspectionTotals } from '@/types/inspection';
+import type { Block, CompanyProfile, Customer, Inspection, InspectionHeader, InspectionTotals } from '@/types/inspection';
 import { DEFAULT_COMPANY_PROFILE, DEFAULT_HEADER } from '@/types/inspection';
 import { buildBlock, calcTotals, recalcBlock } from '@/lib/calculations';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,6 +12,12 @@ interface InspectionStore {
   resetStore: () => void;          // wipes both memory + localStorage
   companyProfile: CompanyProfile;
   setCompanyProfile: (profile: CompanyProfile) => void;
+
+  isOnline: boolean;
+  setIsOnline: (online: boolean) => void;
+  syncStatus: 'saved' | 'syncing' | 'error' | 'offline';
+  setSyncStatus: (status: 'saved' | 'syncing' | 'error' | 'offline') => void;
+  syncActiveToDb: () => Promise<void>;
 
   activeInspection: Inspection | null;
   startNewInspection: (header: InspectionHeader) => void;
@@ -25,6 +31,14 @@ interface InspectionStore {
   finishInspection: () => Promise<string>;
   uploadPhoto: (file: File) => Promise<string>;
   clearActiveInspection: () => void;
+  updateDraftBlock: (draft: Inspection['draftBlock']) => void;
+
+  customers: Customer[];
+  selectedCustomerId: string | null;
+  fetchCustomersFromDb: () => Promise<void>;
+  saveCustomer: (customer: Omit<Customer, 'id'> & { id?: string }) => Promise<string>;
+  deleteCustomer: (id: string) => Promise<void>;
+  setSelectedCustomerId: (id: string | null) => void;
 
   savedInspections: Inspection[];
   saveInspection: () => void;
@@ -52,11 +66,18 @@ export const useInspectionStore = create<InspectionStore>()(
           companyProfile: DEFAULT_COMPANY_PROFILE,
           activeInspection: null,
           savedInspections: [],
+          customers: [],
+          selectedCustomerId: null,
         });
       },
 
       companyProfile: DEFAULT_COMPANY_PROFILE,
       setCompanyProfile: (profile) => set({ companyProfile: profile }),
+
+      isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
+      setIsOnline: (online) => set({ isOnline: online, syncStatus: online ? 'saved' : 'offline' }),
+      syncStatus: 'saved',
+      setSyncStatus: (status) => set({ syncStatus: status }),
 
       activeInspection: null,
 
@@ -92,6 +113,17 @@ export const useInspectionStore = create<InspectionStore>()(
       },
 
       clearActiveInspection: () => set({ activeInspection: null }),
+
+      updateDraftBlock: (draft) => {
+        const { activeInspection } = get();
+        if (!activeInspection) return;
+        set({
+          activeInspection: {
+            ...activeInspection,
+            draftBlock: draft,
+          }
+        });
+      },
 
       discardActiveInspection: () => {
         set({ activeInspection: null });
@@ -139,6 +171,7 @@ export const useInspectionStore = create<InspectionStore>()(
             updatedAt: new Date().toISOString(),
           },
         });
+        setTimeout(() => get().syncActiveToDb(), 100);
       },
 
       updateBlock: (blockId, l1, l2, l3, remarks, allowance, type, photoUrl, photoUrls) => {
@@ -170,6 +203,7 @@ export const useInspectionStore = create<InspectionStore>()(
             updatedAt: new Date().toISOString(),
           },
         });
+        setTimeout(() => get().syncActiveToDb(), 100);
       },
 
       deleteBlock: (blockId) => {
@@ -184,6 +218,7 @@ export const useInspectionStore = create<InspectionStore>()(
             updatedAt: new Date().toISOString(),
           },
         });
+        setTimeout(() => get().syncActiveToDb(), 100);
       },
 
       updateHeader: (header) => {
@@ -214,6 +249,7 @@ export const useInspectionStore = create<InspectionStore>()(
             updatedAt: new Date().toISOString(),
           },
         });
+        setTimeout(() => get().syncActiveToDb(), 100);
       },
 
       finishInspection: async () => {
@@ -370,10 +406,161 @@ export const useInspectionStore = create<InspectionStore>()(
 
         set({ savedInspections: inspections });
       },
+
+      syncActiveToDb: async () => {
+        const { activeInspection, isOnline, setSyncStatus } = get();
+        if (!activeInspection || !isOnline) {
+          if (!isOnline) setSyncStatus('offline');
+          return;
+        }
+
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        setSyncStatus('syncing');
+
+        try {
+          const { error } = await supabase.from('inspections').upsert({
+            local_id: activeInspection.id,
+            user_id: user.id,
+            header: activeInspection.header as unknown as Json,
+            blocks: activeInspection.blocks as unknown as Json,
+            totals: activeInspection.totals as unknown as Json,
+            created_at: activeInspection.createdAt,
+            updated_at: new Date().toISOString(), // Keep track for conflict resolution
+          }, { onConflict: 'local_id' });
+
+          if (error) throw error;
+          
+          setSyncStatus('saved');
+          // Optionally mark as savedToCloud in memory too
+          if (!activeInspection.savedToCloud) {
+            set({ 
+              activeInspection: { ...activeInspection, savedToCloud: true } 
+            });
+          }
+        } catch (err) {
+          console.error('Auto-sync error:', err);
+          setSyncStatus('error');
+        }
+      },
+
+      customers: [],
+      selectedCustomerId: null,
+
+      setSelectedCustomerId: (id) => set({ selectedCustomerId: id }),
+
+      fetchCustomersFromDb: async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data, error } = await supabase
+          .from('customers')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('name');
+
+        if (error || !data) return;
+
+        const customers: Customer[] = data.map((row) => ({
+          id: row.id,
+          name: row.name,
+          address: row.address || '',
+          country: row.country || '',
+          phone: row.phone || '',
+          email: row.email || '',
+          rbiCode: row.rbi_code || '',
+          ieCode: row.ie_code || '',
+          gstNumber: row.gst_number || '',
+          lutNumber: row.lut_number || '',
+          otherReferences: row.other_references || [],
+          bankName: row.bank_name || '',
+          bankBranch: row.bank_branch || '',
+          bankAddress: row.bank_address || '',
+          accountNumber: row.account_number || '',
+          swiftCode: row.swift_code || '',
+          defaultPortOfLoading: row.default_port_of_loading || '',
+          defaultPortOfDischarge: row.default_port_of_discharge || '',
+          defaultFinalDestination: row.default_final_destination || '',
+          defaultFinalDestinationCountry: row.default_final_destination_country || '',
+          defaultTermsOfDelivery: row.default_terms_of_delivery || '',
+          defaultTermsOfPayment: row.default_terms_of_payment || '',
+          defaultCurrency: row.default_currency || 'USD',
+          defaultHsCode: row.default_hs_code || '',
+        }));
+
+        set({ customers });
+      },
+
+      saveCustomer: async (customer) => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('Not authenticated');
+
+        const dbRow = {
+          name: customer.name,
+          user_id: user.id,
+          address: customer.address,
+          country: customer.country,
+          phone: customer.phone,
+          email: customer.email,
+          rbi_code: customer.rbiCode,
+          ie_code: customer.ieCode,
+          gst_number: customer.gstNumber,
+          lut_number: customer.lutNumber,
+          other_references: customer.otherReferences,
+          bank_name: customer.bankName,
+          bank_branch: customer.bankBranch,
+          bank_address: customer.bankAddress,
+          account_number: customer.accountNumber,
+          swift_code: customer.swiftCode,
+          default_port_of_loading: customer.defaultPortOfLoading,
+          default_port_of_discharge: customer.defaultPortOfDischarge,
+          default_final_destination: customer.defaultFinalDestination,
+          default_final_destination_country: customer.defaultFinalDestinationCountry,
+          default_terms_of_delivery: customer.defaultTermsOfDelivery,
+          default_terms_of_payment: customer.defaultTermsOfPayment,
+          default_currency: customer.defaultCurrency,
+          default_hs_code: customer.defaultHsCode,
+        };
+
+        let resultId = customer.id;
+
+        if (customer.id) {
+          const { error } = await supabase
+            .from('customers')
+            .update(dbRow)
+            .eq('id', customer.id);
+          if (error) throw error;
+        } else {
+          const { data, error } = await supabase
+            .from('customers')
+            .insert(dbRow)
+            .select()
+            .single();
+          if (error) throw error;
+          resultId = data.id;
+        }
+
+        await get().fetchCustomersFromDb();
+        return resultId!;
+      },
+
+      deleteCustomer: async (id) => {
+        const { error } = await supabase
+          .from('customers')
+          .delete()
+          .eq('id', id);
+        if (error) throw error;
+        await get().fetchCustomersFromDb();
+        if (get().selectedCustomerId === id) {
+          set({ selectedCustomerId: null });
+        }
+      },
     }),
     {
       name: 'quarry-inspection-storage',
-      version: 3, // bump this to wipe all cached data across all browsers
+      version: 4, // bump this to wipe all cached data across all browsers
       onRehydrateStorage: () => async (state) => {
         if (!state) return;
         state.checkDraftExpiration();
@@ -390,6 +577,12 @@ export const useInspectionStore = create<InspectionStore>()(
           state.userId = null;
         } else if (currentUserId) {
           state.userId = currentUserId;
+          // After rehydrating, try to fetch fresh data from DB
+          state.fetchInspectionsFromDb();
+          // If there's an active inspection, try to sync it
+          if (state.activeInspection) {
+            state.syncActiveToDb();
+          }
         }
       },
     },

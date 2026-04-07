@@ -74,6 +74,104 @@ export type Database = {
         }
         Relationships: []
       }
+      customers: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          address: string | null
+          country: string | null
+          phone: string | null
+          email: string | null
+          rbi_code: string | null
+          ie_code: string | null
+          gst_number: string | null
+          lut_number: string | null
+          other_references: string[] | null
+          bank_name: string | null
+          bank_branch: string | null
+          bank_address: string | null
+          account_number: string | null
+          swift_code: string | null
+          default_port_of_loading: string | null
+          default_port_of_discharge: string | null
+          default_final_destination: string | null
+          default_final_destination_country: string | null
+          default_terms_of_delivery: string | null
+          default_terms_of_payment: string | null
+          default_currency: string | null
+          default_hs_code: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          address?: string | null
+          country?: string | null
+          phone?: string | null
+          email?: string | null
+          rbi_code?: string | null
+          ie_code?: string | null
+          gst_number?: string | null
+          lut_number?: string | null
+          other_references?: string[] | null
+          bank_name?: string | null
+          bank_branch?: string | null
+          bank_address?: string | null
+          account_number?: string | null
+          swift_code?: string | null
+          default_port_of_loading?: string | null
+          default_port_of_discharge?: string | null
+          default_final_destination?: string | null
+          default_final_destination_country?: string | null
+          default_terms_of_delivery?: string | null
+          default_terms_of_payment?: string | null
+          default_currency?: string | null
+          default_hs_code?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          address?: string | null
+          country?: string | null
+          phone?: string | null
+          email?: string | null
+          rbi_code?: string | null
+          ie_code?: string | null
+          gst_number?: string | null
+          lut_number?: string | null
+          other_references?: string[] | null
+          bank_name?: string | null
+          bank_branch?: string | null
+          bank_address?: string | null
+          account_number?: string | null
+          swift_code?: string | null
+          default_port_of_loading?: string | null
+          default_port_of_discharge?: string | null
+          default_final_destination?: string | null
+          default_final_destination_country?: string | null
+          default_terms_of_delivery?: string | null
+          default_terms_of_payment?: string | null
+          default_currency?: string | null
+          default_hs_code?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

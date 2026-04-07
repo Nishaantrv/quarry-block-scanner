@@ -21,6 +21,7 @@ export default function MarkingPage() {
   const saveInspection = useInspectionStore((s) => s.saveInspection);
   // finishInspection is handled on FinishDetailsPage
   const updateHeader = useInspectionStore((s) => s.updateHeader);
+  const updateDraftBlock = useInspectionStore((s) => s.updateDraftBlock);
 
   const [l1, setL1] = useState('');
   const [l2, setL2] = useState('');
@@ -46,7 +47,29 @@ export default function MarkingPage() {
 
   useEffect(() => {
     if (!inspection) navigate('/');
-  }, [inspection, navigate]);
+    
+    // Load draft if we are in "new block" mode and it exists
+    if (inspection?.draftBlock && currentIndex === -1 && !l1 && !l2 && !l3) {
+      setL1(inspection.draftBlock.l1);
+      setL2(inspection.draftBlock.l2);
+      setL3(inspection.draftBlock.l3);
+      setRemarks(inspection.draftBlock.remarks);
+      setBlockType(inspection.draftBlock.type);
+      setManualAllowance(inspection.draftBlock.manualAllowance);
+    }
+  }, [inspection, navigate, currentIndex]);
+
+  // Sync back to store draft
+  useEffect(() => {
+    if (currentIndex === -1 && inspection) {
+        const timer = setTimeout(() => {
+            updateDraftBlock({
+                l1, l2, l3, remarks, type: blockType, manualAllowance
+            });
+        }, 1000);
+        return () => clearTimeout(timer);
+    }
+  }, [l1, l2, l3, remarks, blockType, manualAllowance, currentIndex, inspection?.id]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadPhoto = useInspectionStore((s) => s.uploadPhoto);
@@ -175,6 +198,9 @@ export default function MarkingPage() {
     setPhotoUrls([]);
     setRotation(0);
     l1Ref.current?.focus();
+
+    // Clear draft so it doesn't reappear
+    updateDraftBlock(undefined);
 
     setTimeout(() => setLastAdded(null), 2500);
   };

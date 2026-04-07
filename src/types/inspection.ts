@@ -18,6 +18,36 @@ export interface CompanyProfile {
   otherReferences?: string[];
 }
 
+export interface Customer {
+  id: string;
+  name: string;
+  address: string;
+  country: string;
+  phone?: string;
+  email?: string;
+  // Registration
+  rbiCode?: string;
+  ieCode?: string;
+  gstNumber?: string;
+  lutNumber?: string;
+  otherReferences?: string[];
+  // Bank
+  bankName?: string;
+  bankBranch?: string;
+  bankAddress?: string;
+  accountNumber?: string;
+  swiftCode?: string;
+  // Defaults
+  defaultPortOfLoading?: string;
+  defaultPortOfDischarge?: string;
+  defaultFinalDestination?: string;
+  defaultFinalDestinationCountry?: string;
+  defaultTermsOfDelivery?: string;
+  defaultTermsOfPayment?: string;
+  defaultCurrency?: string;
+  defaultHsCode?: string;
+}
+
 export interface InspectionHeader {
   // Customer
   consignee: string;
@@ -88,6 +118,14 @@ export interface Inspection {
   savedToCloud: boolean;
   status: 'draft' | 'completed';
   updatedAt?: string;
+  draftBlock?: {
+    l1: string;
+    l2: string;
+    l3: string;
+    remarks: string;
+    type: 'small' | 'large' | 'other';
+    manualAllowance: string;
+  };
 }
 
 export const DEFAULT_HEADER: InspectionHeader = {
@@ -133,6 +171,15 @@ export const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
   accountNumber: '',
   swiftCode: '',
   defaultPortOfLoading: '',
+  defaultCurrency: 'USD',
+  otherReferences: [],
+};
+
+export const DEFAULT_CUSTOMER: Customer = {
+  id: '',
+  name: '',
+  address: '',
+  country: '',
   defaultCurrency: 'USD',
   otherReferences: [],
 };
