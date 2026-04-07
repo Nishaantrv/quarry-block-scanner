@@ -18,7 +18,7 @@ export default function ExportPage() {
   const updateHeader = useInspectionStore((s) => s.updateHeader);
   const setCompanyProfile = useInspectionStore((s) => s.setCompanyProfile);
 
-  const [activeDoc, setActiveDoc] = React.useState<DocType>('block-abstract');
+  const [activeDoc, setActiveDoc] = React.useState<DocType>('normal-report');
   const printRef = useRef<HTMLDivElement>(null);
 
   // Edit Mode State
@@ -183,9 +183,9 @@ export default function ExportPage() {
         <div className={cn("inline-block border shadow-lg p-2 transition-colors min-w-full", isEditing ? "bg-amber-500/10 border-amber-500/30" : "bg-zinc-500/10")}>
           <div ref={printRef} className={cn(
             "bg-white text-black p-[5mm] text-[8px] leading-tight mx-auto shadow-sm print:shadow-none",
-            activeDoc === 'block-abstract' ? "w-[297mm] min-h-[210mm]" : "w-[210mm] min-h-[297mm]"
+            activeDoc === 'normal-report' ? "w-[297mm] min-h-[210mm]" : "w-[210mm] min-h-[297mm]"
           )}>
-            {activeDoc !== 'normal-report' && activeDoc !== 'block-abstract' && (
+            {activeDoc !== 'normal-report' && (
               <InvoiceHeader
                 cp={cp}
                 h={h}
@@ -206,6 +206,16 @@ export default function ExportPage() {
                 blocks={blocks}
                 h={h}
                 cp={cp}
+              />
+            )}
+
+            {(activeDoc === 'gross-packing' || activeDoc === 'net-packing') && (
+              <PackingListBody
+                blocks={blocks}
+                type={activeDoc === 'gross-packing' ? 'gross' : 'net'}
+                h={h}
+                cp={cp}
+                totals={totals}
               />
             )}
 
