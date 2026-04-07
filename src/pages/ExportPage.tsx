@@ -369,32 +369,14 @@ function DocumentEditor({ h, cp, blocks, onHeaderChange, onProfileChange, onBloc
 
   return (
     <Card className="flex-1 overflow-hidden flex flex-col glass-panel border-none shadow-none rounded-xl">
-      <Tabs defaultValue="general" className="flex-1 flex flex-col overflow-hidden">
-        <div className="px-4 pt-4">
-          <TabsList className="grid grid-cols-6 w-full bg-muted/50 p-1">
-            <TabsTrigger value="general" className="text-[10px] uppercase font-bold px-1 py-2">
-              <Settings2 className="h-3 w-3 mr-1" /> General
-            </TabsTrigger>
-            <TabsTrigger value="blocks" className="text-[10px] uppercase font-bold px-1 py-2">
-              <Plus className="h-3 w-3 mr-1" /> Blocks
-            </TabsTrigger>
-            <TabsTrigger value="company" className="text-[10px] uppercase font-bold px-1 py-2">
-              <Building className="h-3 w-3 mr-1" /> Exporter
-            </TabsTrigger>
-            <TabsTrigger value="consignee" className="text-[10px] uppercase font-bold px-1 py-2">
-              <User className="h-3 w-3 mr-1" /> Consignee
-            </TabsTrigger>
-            <TabsTrigger value="shipping" className="text-[10px] uppercase font-bold px-1 py-2">
-              <Truck className="h-3 w-3 mr-1" /> Shipping
-            </TabsTrigger>
-            <TabsTrigger value="payment" className="text-[10px] uppercase font-bold px-1 py-2">
-              <CreditCard className="h-3 w-3 mr-1" /> Terms
-            </TabsTrigger>
-          </TabsList>
-        </div>
+      <div className="px-4 pt-3 pb-2 border-b border-border">
+        <h3 className="text-[10px] font-black uppercase tracking-widest text-primary">Edit Blocks</h3>
+        <p className="text-[9px] text-muted-foreground mt-0.5">Modify dimensions, remarks, and type for each block</p>
+      </div>
 
-        <ScrollArea className="flex-1 p-4 overflow-y-auto">
-          <TabsContent value="blocks" className="mt-0 space-y-4 pb-4">
+      <div className="flex-1 overflow-hidden">
+        <ScrollArea className="h-full p-4">
+          <div className="space-y-3 pb-4">
              <div className="space-y-3">
                {blocks.map((block, idx) => (
                  <div key={block.id} className="p-3 border rounded-lg bg-card/50 space-y-3">
@@ -489,208 +471,13 @@ function DocumentEditor({ h, cp, blocks, onHeaderChange, onProfileChange, onBloc
                  </div>
                ))}
              </div>
-          </TabsContent>
-
-          <TabsContent value="general" className="mt-0 space-y-4 pb-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase text-muted-foreground">Invoice Number</Label>
-                <Input value={h.invoiceNumber || ''} onChange={e => updateH('invoiceNumber', e.target.value)} placeholder="INV-2024-001" className="h-10" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase text-muted-foreground">Exporter Ref No</Label>
-                <Input value={h.exporterRefNumber || ''} onChange={e => updateH('exporterRefNumber', e.target.value)} className="h-10" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase text-muted-foreground">HS Code</Label>
-                <Input value={h.hsCode || ''} onChange={e => updateH('hsCode', e.target.value)} className="h-10" />
-              </div>
-            </div>
-
-            <div className="pt-2 border-t mt-4">
-              <h3 className="text-[10px] font-bold uppercase tracking-widest text-primary mb-3">Active Allowances (Presets)</h3>
-              <div className="flex flex-wrap gap-2">
-                {(h.blockTypes || []).map(t => (
-                  <div key={t.id} className="bg-muted p-2 rounded-lg border border-border flex flex-col min-w-[60px]">
-                    <span className="text-[8px] font-black uppercase text-muted-foreground">T{t.id}</span>
-                    <span className="text-xs font-bold">{t.allowance}cm</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="company" className="mt-0 space-y-4 pb-4">
-             <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase text-muted-foreground">Company Name</Label>
-                <Input value={cp.companyName} onChange={e => updateCp('companyName', e.target.value)} className="h-10 font-bold" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase text-muted-foreground">Address</Label>
-                <Textarea value={cp.address} onChange={e => updateCp('address', e.target.value)} className="min-h-[80px]" />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-bold uppercase text-muted-foreground">Country</Label>
-                  <Input value={cp.country} onChange={e => updateCp('country', e.target.value)} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-bold uppercase text-muted-foreground">LUT Number</Label>
-                  <Input value={cp.lutNumber || ''} onChange={e => updateCp('lutNumber', e.target.value)} />
-                </div>
-              </div>
-
-              <div className="pt-2 border-t mt-4">
-                <h3 className="text-[10px] font-bold uppercase tracking-widest text-primary flex items-center gap-2 mb-3">
-                  <Landmark className="h-3 w-3" /> Bank Details
-                </h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label className="text-[10px] font-bold uppercase">Bank Name</Label>
-                    <Input value={cp.bankName || ''} onChange={e => updateCp('bankName', e.target.value)} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-[10px] font-bold uppercase">Account No</Label>
-                    <Input value={cp.accountNumber || ''} onChange={e => updateCp('accountNumber', e.target.value)} />
-                  </div>
-                  <div className="col-span-2 space-y-1.5">
-                    <Label className="text-[10px] font-bold uppercase">Bank Address</Label>
-                    <Input value={cp.bankAddress || ''} onChange={e => updateCp('bankAddress', e.target.value)} />
-                  </div>
-                </div>
-              </div>
-          </TabsContent>
-
-          <TabsContent value="consignee" className="mt-0 space-y-4 pb-4">
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="text-[10px] font-bold uppercase tracking-widest text-primary flex items-center gap-2">
-                <User className="h-4 w-4" /> Consignee Selection
-              </h3>
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8 gap-2 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20">
-                    <Search className="h-3.5 w-3.5" /> Quick Load
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-[300px] max-h-[400px] overflow-y-auto rounded-xl p-1" align="end">
-                  <div className="p-2 border-b text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Select saved customer</div>
-                  {customers.map((customer) => (
-                    <DropdownMenuItem 
-                      key={customer.id} 
-                      className="py-2.5 px-3 rounded-lg flex flex-col items-start gap-0.5"
-                      onSelect={() => loadFromCustomer(customer)}
-                    >
-                      <span className="font-black text-xs uppercase tracking-tight">{customer.name}</span>
-                      <span className="text-[10px] opacity-70 italic">{customer.country}</span>
-                    </DropdownMenuItem>
-                  ))}
-                  {customers.length === 0 && (
-                    <div className="p-4 text-center text-[10px] text-muted-foreground font-bold uppercase italic">No customers found</div>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
-            <div className="space-y-3 pt-2">
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase text-muted-foreground">Consignee Name</Label>
-                <Input value={h.consignee || ''} onChange={e => updateH('consignee', e.target.value)} className="h-10 font-bold" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase text-muted-foreground">Address</Label>
-                <Textarea value={h.consigneeAddress || ''} onChange={e => updateH('consigneeAddress', e.target.value)} className="min-h-[80px]" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase text-muted-foreground">Phone Number</Label>
-                <Input value={h.consigneePhone || ''} onChange={e => updateH('consigneePhone', e.target.value)} />
-              </div>
-              
-              <div className="pt-4 border-t">
-                <Label className="text-[10px] font-bold uppercase text-muted-foreground">Notify Party / Other Buyer</Label>
-                <Textarea value={h.notifyParty || ''} onChange={e => updateH('notifyParty', e.target.value)} className="min-h-[80px] mt-1.5" />
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="shipping" className="mt-0 space-y-4 pb-4">
-             <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-bold uppercase text-muted-foreground">Pre-Carriage By</Label>
-                  <Input value={h.preCarriageBy || ''} onChange={e => updateH('preCarriageBy', e.target.value)} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-bold uppercase text-muted-foreground">Vessel / Flight No</Label>
-                  <Input value={h.vessel || ''} onChange={e => updateH('vessel', e.target.value)} />
-                </div>
-             </div>
-
-             <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-bold uppercase text-muted-foreground">Port of Loading</Label>
-                  <Input value={cp.defaultPortOfLoading || ''} onChange={e => updateCp('defaultPortOfLoading', e.target.value)} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-bold uppercase text-muted-foreground">Port of Discharge</Label>
-                  <Input value={h.portOfDischarge || ''} onChange={e => updateH('portOfDischarge', e.target.value)} />
-                </div>
-             </div>
-
-             <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-bold uppercase text-muted-foreground">Place of Receipt</Label>
-                  <Input value={h.placeOfReceipt || ''} onChange={e => updateH('placeOfReceipt', e.target.value)} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-bold uppercase text-muted-foreground">Final Destination</Label>
-                  <Input value={h.finalDestination || ''} onChange={e => updateH('finalDestination', e.target.value)} />
-                </div>
-             </div>
-
-             <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-bold uppercase text-muted-foreground">Country of Origin</Label>
-                  <Input value={h.countryOfOrigin || 'INDIA'} onChange={e => updateH('countryOfOrigin', e.target.value)} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-bold uppercase text-muted-foreground">Final Dest. Country</Label>
-                  <Input value={h.finalDestinationCountry || ''} onChange={e => updateH('finalDestinationCountry', e.target.value)} />
-                </div>
-             </div>
-          </TabsContent>
-
-          <TabsContent value="payment" className="mt-0 space-y-4 pb-4">
-             <div className="space-y-3">
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-bold uppercase text-muted-foreground">Terms of Delivery</Label>
-                  <Input value={h.termsOfDelivery || ''} onChange={e => updateH('termsOfDelivery', e.target.value)} placeholder="e.g. FOB CHENNAI PORT" className="h-10" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-bold uppercase text-muted-foreground">Terms of Payment</Label>
-                  <Input value={h.termsOfPayment || ''} onChange={e => updateH('termsOfPayment', e.target.value)} placeholder="e.g. 100% ADVANCE" className="h-10" />
-                </div>
-                
-                <div className="pt-4 border-t flex items-end gap-4">
-                  <div className="space-y-1.5 flex-1">
-                    <Label className="text-[10px] font-bold uppercase text-muted-foreground">Currency</Label>
-                    <Input value={h.currency || 'USD'} onChange={e => updateH('currency', e.target.value)} className="h-10 font-bold" />
-                  </div>
-                  <div className="space-y-1.5 flex-[2]">
-                    <Label className="text-[10px] font-bold uppercase text-muted-foreground">Rate per CBM</Label>
-                    <Input type="number" value={String(h.pricePerCbm || 0)} onChange={e => updateH('pricePerCbm', parseFloat(e.target.value) || 0)} className="h-10 font-mono" />
-                  </div>
-                </div>
-             </div>
-          </TabsContent>
-        </ScrollArea>
-      </Tabs>
-    </Card>
+          </div>
+          </ScrollArea>
+        </div>
+      </Card>
   );
 }
+
 
 interface InvoiceHeaderProps {
   cp: CompanyProfile;
