@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { GlassContainer } from '@/components/ui/glass-container';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, FileDown, Ship, Wallet, Box, Package } from 'lucide-react';
+import { ArrowLeft, FileDown, Ship, Wallet, Box, Package, Camera, X } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 export default function FinishDetailsPage() {
@@ -16,6 +16,12 @@ export default function FinishDetailsPage() {
     const inspection = useInspectionStore((s) => s.activeInspection);
     const updateHeader = useInspectionStore((s) => s.updateHeader);
     const finishInspection = useInspectionStore((s) => s.finishInspection);
+    const uploadPhoto = useInspectionStore((s) => s.uploadPhoto);
+    const updateInspectionPhotos = useInspectionStore((s) => s.updateInspectionPhotos);
+    const [isUploading, setIsUploading] = React.useState(false);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+    const inspectionPhotos = inspection?.header.inspectionPhotos || [];
 
     const { register, handleSubmit, watch } = useForm<InspectionHeader>({
         defaultValues: inspection?.header ?? {},
@@ -115,6 +121,29 @@ export default function FinishDetailsPage() {
                 variant: 'destructive',
             });
         }
+        // ... existing onSubmit logic ...
+    };
+
+    const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        try {
+            setIsUploading(true);
+            const uploadPromises = Array.from(files).map(file => uploadPhoto(file));
+            const urls = await Promise.all(uploadPromises);
+            updateInspectionPhotos([...inspectionPhotos, ...urls]);
+            toast({ title: 'Photos Uploaded', description: `${urls.length} photos have been saved.` });
+        } catch (error: any) {
+            toast({ title: 'Upload Failed', description: error.message, variant: 'destructive' });
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const removePhoto = (index: number) => {
+        const newPhotos = inspectionPhotos.filter((_, i) => i !== index);
+        updateInspectionPhotos(newPhotos);
     };
 
     return (
@@ -218,6 +247,62 @@ export default function FinishDetailsPage() {
                             <Field label="Stone Type" placeholder="e.g. BLACK GALAXY" {...register('stoneType')} />
                             <Field label="Kuppam Code" placeholder="e.g. KC-101" {...register('quarryCode')} />
                         </div>
+                    </GlassContainer>
+                </section>
+
+                {/* INSPECTION EVIDENCE SECTION */}
+                <section className="space-y-3">
+                    <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2 px-1">
+                        <Camera className="w-4 h-4" /> Inspection Evidence / Photos
+                    </h2>
+                    <GlassContainer className="p-4">
+                        <div className="flex flex-wrap gap-3 mb-4">
+                            {inspectionPhotos.map((url, idx) => (
+                                <div key={idx} className="relative group shrink-0">
+                                    <img 
+                                        src={url} 
+                                        alt={`Evidence ${idx + 1}`} 
+                                        className="h-20 w-20 object-cover rounded-xl border border-border transition-transform hover:scale-105" 
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => removePhoto(idx)}
+                                        className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground rounded-full p-1 shadow-lg hover:scale-110 transition-transform z-20"
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </button>
+                                </div>
+                            ))}
+                            
+                            <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                className="hidden"
+                                ref={fileInputRef}
+                                onChange={handlePhotoUpload}
+                            />
+                            
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="h-20 w-20 rounded-xl border-2 border-dashed flex flex-col gap-1 items-center justify-center text-[10px] font-bold uppercase text-muted-foreground hover:bg-primary/5 hover:border-primary/30 transition-all"
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={isUploading}
+                            >
+                                {isUploading ? (
+                                    <div className="h-5 w-5 border-2 border-primary/30 border-t-primary animate-spin rounded-full" />
+                                ) : (
+                                    <>
+                                        <Camera className="h-5 w-5" />
+                                        <span>Add Photo</span>
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground italic pl-1">
+                            Upload photos of the quarry site, pile, loading process, etc.
+                        </p>
                     </GlassContainer>
                 </section>
 

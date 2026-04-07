@@ -27,9 +27,7 @@ export default function MarkingPage() {
   const [l2, setL2] = useState('');
   const [l3, setL3] = useState('');
   const [remarks, setRemarks] = useState('');
-  const [manualAllowance, setManualAllowance] = useState('');
   const [blockType, setBlockType] = useState<'small' | 'large' | 'other'>('small');
-  const [sessionAllowance, setSessionAllowance] = useState('');
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [rotation, setRotation] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -40,6 +38,8 @@ export default function MarkingPage() {
 
   // Edit start info panel
   const [showEditHeader, setShowEditHeader] = useState(false);
+  const [showEditTypeModal, setShowEditTypeModal] = useState(false);
+  const [activeType, setActiveType] = useState<'1' | '2' | '3'>('1');
 
   const l1Ref = useRef<HTMLInputElement>(null);
   const l2Ref = useRef<HTMLInputElement>(null);
@@ -55,7 +55,6 @@ export default function MarkingPage() {
       setL3(inspection.draftBlock.l3);
       setRemarks(inspection.draftBlock.remarks);
       setBlockType(inspection.draftBlock.type);
-      setManualAllowance(inspection.draftBlock.manualAllowance);
     }
   }, [inspection, navigate, currentIndex]);
 
@@ -64,12 +63,12 @@ export default function MarkingPage() {
     if (currentIndex === -1 && inspection) {
         const timer = setTimeout(() => {
             updateDraftBlock({
-                l1, l2, l3, remarks, type: blockType, manualAllowance
+                l1, l2, l3, remarks, type: blockType, manualAllowance: ''
             });
         }, 1000);
         return () => clearTimeout(timer);
     }
-  }, [l1, l2, l3, remarks, blockType, manualAllowance, currentIndex, inspection?.id]);
+  }, [l1, l2, l3, remarks, blockType, currentIndex, inspection?.id]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadPhoto = useInspectionStore((s) => s.uploadPhoto);
@@ -106,7 +105,6 @@ export default function MarkingPage() {
     setL3(String(block.l3));
     setRemarks(block.remarks || '');
     setBlockType(block.type || 'small');
-    setManualAllowance(block.allowance !== undefined ? String(block.allowance) : '');
     setPhotoUrls(block.photoUrls || (block.photoUrl ? [block.photoUrl] : []));
     setRotation(0);
     setCurrentIndex(index);
@@ -131,8 +129,7 @@ export default function MarkingPage() {
     const v2 = parseFloat(l2);
     const v3 = parseFloat(l3);
     if (!isNaN(v1) && !isNaN(v2) && !isNaN(v3) && v1 > 0 && v2 > 0 && v3 > 0) {
-      const vAllw = parseFloat(manualAllowance) || parseFloat(sessionAllowance);
-      updateBlock(currentBlock!.id, v1, v2, v3, remarks, !isNaN(vAllw) ? vAllw : undefined, blockType as any, undefined, photoUrls);
+      updateBlock(currentBlock!.id, v1, v2, v3, remarks, currentBlock?.allowance, blockType as any, currentBlock?.pricePerCbm, undefined, photoUrls);
     }
   };
 
@@ -141,7 +138,6 @@ export default function MarkingPage() {
     setL2('');
     setL3('');
     setRemarks('');
-    setManualAllowance('');
     setBlockType('small');
     setPhotoUrls([]);
     setRotation(0);
@@ -155,30 +151,32 @@ export default function MarkingPage() {
       return;
     }
 
-    // Adding a new block
+    // VALIDATION
     const v1 = parseFloat(l1);
     const v2 = parseFloat(l2);
     const v3 = parseFloat(l3);
-
-    // VALIDATION
     if (isNaN(v1) || isNaN(v2) || isNaN(v3) || v1 <= 0 || v2 <= 0 || v3 <= 0) {
       toast({ title: 'Invalid Dimensions', description: 'Please enter valid positive numbers.', variant: 'destructive' });
       return;
     }
 
-    const vAllw = parseFloat(manualAllowance) || parseFloat(sessionAllowance);
-    addBlock(v1, v2, v3, remarks, !isNaN(vAllw) ? vAllw : undefined, blockType as any, undefined, photoUrls);
+    const h = inspection.header;
+    const allowanceValue = 
+      activeType === '1' ? h.type1Allowance :
+      activeType === '2' ? (h.type2Allowance ?? h.type1Allowance) :
+      (h.type3Allowance ?? h.type1Allowance);
+    
+    const priceValue = 
+      activeType === '1' ? h.type1Price :
+      activeType === '2' ? (h.type2Price ?? h.type1Price) :
+      (h.type3Price ?? h.type1Price);
+
+    addBlock(v1, v2, v3, remarks, allowanceValue, 'small', priceValue, undefined, photoUrls);
 
     // Feedback calculations
-    const { allowanceSmall, allowanceLarge, allowanceOther, allowance: legacyAllowance } = inspection.header;
-    let allowance = Number(allowanceSmall);
-    if (blockType === 'large') allowance = Number(allowanceLarge);
-    else if (blockType === 'other') allowance = Number(allowanceOther);
-
-    const currentAllowanceValue = parseFloat(manualAllowance) || parseFloat(sessionAllowance) || allowance;
-    const n1 = Math.max(v1 - currentAllowanceValue, 0);
-    const n2 = Math.max(v2 - currentAllowanceValue, 0);
-    const n3 = Math.max(v3 - currentAllowanceValue, 0);
+    const n1 = Math.max(v1 - allowanceValue, 0);
+    const n2 = Math.max(v2 - allowanceValue, 0);
+    const n3 = Math.max(v3 - allowanceValue, 0);
     const netCbm = (n1 * n2 * n3) / 1_000_000;
 
     setLastAdded({
@@ -187,40 +185,49 @@ export default function MarkingPage() {
       netCbm: netCbm.toFixed(4),
     });
 
-    // Provide haptic feedback if available (using Vibration API)
     if (navigator.vibrate) navigator.vibrate(50);
-
-    setL1('');
-    setL2('');
-    setL3('');
-    setRemarks('');
-    setManualAllowance('');
-    setPhotoUrls([]);
-    setRotation(0);
+    setL1(''); setL2(''); setL3(''); setRemarks(''); setPhotoUrls([]); setRotation(0);
     l1Ref.current?.focus();
-
-    // Clear draft so it doesn't reappear
     updateDraftBlock(undefined);
-
     setTimeout(() => setLastAdded(null), 2500);
   };
 
+  const confirmEditType = (allowance: number, price: number) => {
+    const updatedHeader = { ...inspection.header };
+    if (activeType === '1') {
+      updatedHeader.type1Allowance = allowance;
+      updatedHeader.type1Price = price;
+      // Also update legacy fields for compatibility
+      updatedHeader.allowanceSmall = allowance;
+      updatedHeader.pricePerCbm = price;
+    } else if (activeType === '2') {
+      updatedHeader.type2Allowance = allowance;
+      updatedHeader.type2Price = price;
+    } else {
+      updatedHeader.type3Allowance = allowance;
+      updatedHeader.type3Price = price;
+    }
+    updateHeader(updatedHeader);
+    setShowEditTypeModal(false);
+    toast({ title: `Type ${activeType} Updated`, description: `Allowance: ${allowance}cm, Price: ${price}` });
+  };
+
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     try {
       setIsUploading(true);
-      const url = await uploadPhoto(file);
-      setPhotoUrls(prev => [...prev, url]);
-      toast({ title: 'Photo Uploaded', description: 'Block photo has been saved.' });
+      const uploadPromises = Array.from(files).map(file => uploadPhoto(file));
+      const urls = await Promise.all(uploadPromises);
+      setPhotoUrls(prev => [...prev, ...urls]);
+      toast({ title: 'Photos Uploaded', description: `${urls.length} photos added to block.` });
     } catch (error: any) {
       toast({ title: 'Upload Failed', description: error.message, variant: 'destructive' });
     } finally {
       setIsUploading(false);
     }
   };
-
   const removePhoto = (index: number) => {
     setPhotoUrls(prev => prev.filter((_, i) => i !== index));
   };
@@ -257,17 +264,12 @@ export default function MarkingPage() {
     const v2 = parseFloat(l2);
     const v3 = parseFloat(l3);
     if (isNaN(v1) || isNaN(v2) || isNaN(v3)) return null;
-    const { allowanceSmall, allowanceLarge, allowanceOther, allowance: legacyAllowance } = inspection.header;
-    let allowance = blockType === 'small' ? Number(allowanceSmall) :
-      blockType === 'large' ? Number(allowanceLarge) :
-        Number(allowanceOther);
+    const h = inspection.header;
+    const currentAllowance = 
+      activeType === '1' ? h.type1Allowance :
+      activeType === '2' ? (h.type2Allowance ?? h.type1Allowance) :
+      (h.type3Allowance ?? h.type1Allowance);
 
-    // Deep fallback logic
-    if (!Number.isFinite(allowance)) {
-      allowance = Number(inspection.header.allowance) || 15;
-    }
-
-    const currentAllowance = parseFloat(manualAllowance) || parseFloat(sessionAllowance) || allowance;
     const n1 = Math.max(v1 - currentAllowance, 0);
     const n2 = Math.max(v2 - currentAllowance, 0);
     const n3 = Math.max(v3 - currentAllowance, 0);
@@ -277,38 +279,58 @@ export default function MarkingPage() {
   return (
     <div className="min-h-screen flex flex-col bg-background pb-20">
       {/* HEADER */}
-      <header className="p-4 flex items-center justify-between">
-        <div className="flex bg-card/50 rounded-full p-1 border border-border shadow-sm">
-          <Button size="icon" variant="ghost" className="rounded-full h-10 w-10 hover:bg-muted" onClick={() => navigate('/')}>
-            <ArrowLeft className="h-5 w-5" />
+      <header className="p-4 flex items-center justify-between gap-2 overflow-hidden">
+        <div className="flex bg-card/50 rounded-full p-1 border border-border shadow-sm shrink-0">
+          <Button size="icon" variant="ghost" className="rounded-full h-8 w-8 hover:bg-muted" onClick={() => navigate('/')}>
+            <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div className="px-4 flex flex-col justify-center border-l border-border/50 ml-1">
-            <span className="text-[10px] font-bold uppercase text-muted-foreground leading-none mb-1">Session</span>
-            <span className="text-sm font-bold leading-none truncate max-w-[120px]">{inspection.header.consignee}</span>
+          <div className="px-3 flex flex-col justify-center border-l border-border/50 ml-1">
+            <span className="text-xs font-bold leading-none truncate max-w-[80px]">{inspection.header.consignee}</span>
           </div>
         </div>
 
-        <div className="flex gap-2">
-          {/* EDIT START INFO BUTTON */}
+        {/* TYPE SWITCHER */}
+        <div className="flex-1 flex items-center justify-center gap-1.5 bg-card/50 border border-border p-1 rounded-full px-2 max-w-[200px]">
+          <Button 
+            size="icon" 
+            variant="ghost" 
+            className="h-7 w-7 rounded-full bg-primary/10 text-primary"
+            onClick={() => setShowEditTypeModal(true)}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+          <div className="h-5 w-[1px] bg-border mx-0.5" />
+          <div className="flex gap-1">
+            {['1', '2', '3'].map((t) => (
+              <button
+                key={t}
+                onClick={() => setActiveType(t as any)}
+                className={cn(
+                  "h-7 px-2.5 rounded-full text-[10px] font-black transition-all",
+                  activeType === t 
+                    ? "bg-primary text-primary-foreground shadow-sm scale-105" 
+                    : "text-muted-foreground hover:bg-muted"
+                )}
+              >
+                T{t}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex gap-1.5 shrink-0">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setShowEditHeader(true)}
-            className="rounded-full bg-card/50 border border-border text-muted-foreground hover:text-foreground hover:bg-muted"
-            title="Edit session details"
+            className="rounded-full h-10 w-10 bg-card/50 border border-border text-muted-foreground"
           >
             <Settings className="h-5 w-5" />
           </Button>
-
-          {!isEditing && blocks.length > 0 && (
-            <Button variant="ghost" size="icon" onClick={() => loadBlock(blocks.length - 1)} className="rounded-full bg-card/50 border border-border text-muted-foreground">
-              <RotateCcw className="h-5 w-5" />
-            </Button>
-          )}
           <Button variant="ghost" size="icon" onClick={() => {
             saveInspection();
             toast({ title: 'Saved', description: 'Inspection saved locally.' });
-          }} className="rounded-full bg-primary/10 text-primary border border-primary/20">
+          }} className="rounded-full h-10 w-10 bg-primary/10 text-primary border border-primary/20">
             <Save className="h-5 w-5" />
           </Button>
         </div>
@@ -326,15 +348,8 @@ export default function MarkingPage() {
             </div>
 
             <div className="flex items-center gap-1.5 bg-card/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-border shadow-md">
-              <span className="text-[9px] font-black uppercase text-muted-foreground mr-1">Allw:</span>
-              <input 
-                type="number"
-                value={sessionAllowance}
-                onChange={(e) => setSessionAllowance(e.target.value)}
-                placeholder={String(inspection.header.allowanceSmall || 15)}
-                className="w-12 bg-transparent border-none focus:ring-0 text-xs font-black text-primary p-0 h-auto tabular-nums placeholder:opacity-50"
-              />
-              <span className="text-[8px] font-bold text-muted-foreground/50">cm</span>
+              <span className="text-[9px] font-black uppercase text-muted-foreground mr-1">Status:</span>
+              <span className="text-xs font-black text-primary px-1">ACTIVE</span>
             </div>
           </div>
 
@@ -371,7 +386,7 @@ export default function MarkingPage() {
             <input
               type="file"
               accept="image/*"
-              capture="environment"
+              multiple
               className="hidden"
               ref={fileInputRef}
               onChange={handlePhotoUpload}
@@ -535,6 +550,15 @@ export default function MarkingPage() {
             setShowEditHeader(false);
             toast({ title: 'Session Updated', description: 'Start marking info has been updated.' });
           }}
+        />
+      )}
+      {/* EDIT TYPE MODAL */}
+      {showEditTypeModal && (
+        <EditTypeModal
+          header={inspection.header}
+          activeType={activeType}
+          onClose={() => setShowEditTypeModal(false)}
+          onConfirm={confirmEditType}
         />
       )}
     </div>
@@ -759,6 +783,82 @@ const PanelField = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<
   ),
 );
 PanelField.displayName = 'PanelField';
+
+/* ─────────────────────────────────────────────────────────────
+   Edit Type Modal
+───────────────────────────────────────────────────────────── */
+interface EditTypeModalProps {
+  header: InspectionHeader;
+  activeType: '1' | '2' | '3';
+  onClose: () => void;
+  onConfirm: (allowance: number, price: number) => void;
+}
+
+function EditTypeModal({ header, activeType, onClose, onConfirm }: EditTypeModalProps) {
+  const currentAllowance = 
+    activeType === '1' ? header.type1Allowance :
+    activeType === '2' ? (header.type2Allowance ?? header.type1Allowance) :
+    (header.type3Allowance ?? header.type1Allowance);
+
+  const currentPrice = 
+    activeType === '1' ? header.type1Price :
+    activeType === '2' ? (header.type2Price ?? header.type1Price) :
+    (header.type3Price ?? header.type1Price);
+
+  const [allowance, setAllowance] = useState(String(currentAllowance));
+  const [price, setPrice] = useState(String(currentPrice));
+
+  return (
+    <>
+      <div className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-md animate-in fade-in duration-300" onClick={onClose} />
+      <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-[70] bg-background rounded-3xl border border-border shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-10 duration-300 flex flex-col max-w-md mx-auto overflow-hidden">
+        
+        <div className="p-6 border-b border-border bg-muted/30">
+          <h2 className="text-xl font-black uppercase tracking-tight text-center">Setup Type {activeType}</h2>
+          <p className="text-xs text-muted-foreground text-center mt-1">Configure allowance and price for this preset</p>
+        </div>
+
+        <div className="p-6 space-y-5">
+          <div className="space-y-1.5">
+            <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground pl-1">
+              Allowance (cm)
+            </Label>
+            <Input
+              type="number"
+              value={allowance}
+              onChange={(e) => setAllowance(e.target.value)}
+              className="h-14 text-2xl font-black tabular-nums bg-card border-2 border-primary/20 focus:border-primary"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground pl-1">
+              Price / CBM ({header.currency})
+            </Label>
+            <Input
+              type="number"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              className="h-14 text-2xl font-black tabular-nums bg-card border-2 border-primary/20 focus:border-primary"
+            />
+          </div>
+        </div>
+
+        <div className="p-6 pt-0 flex gap-3">
+          <Button variant="outline" onClick={onClose} className="flex-1 h-14 rounded-2xl font-bold uppercase tracking-wider">
+            Cancel
+          </Button>
+          <Button 
+            onClick={() => onConfirm(parseFloat(allowance) || 0, parseFloat(price) || 0)}
+            className="flex-[2] h-14 rounded-2xl font-black uppercase tracking-wider shadow-lg shadow-primary/20"
+          >
+            Save Preset {activeType}
+          </Button>
+        </div>
+      </div>
+    </>
+  );
+}
 
 /* ─────────────────────────────────────────────────────────────
    Dimension Input (for block measurements)

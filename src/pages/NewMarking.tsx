@@ -17,11 +17,15 @@ export default function NewMarking() {
   const companyProfile = useInspectionStore((s) => s.companyProfile);
   const customers = useInspectionStore((s) => s.customers);
   const selectedCustomerId = useInspectionStore((s) => s.selectedCustomerId);
+  const headerDraft = useInspectionStore((s) => s.headerDraft);
+  const updateHeaderDraft = useInspectionStore((s) => s.updateHeaderDraft);
   
   const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
 
-  const { register, handleSubmit, watch, setValue } = useForm<InspectionHeader>({
-    defaultValues: {
+  const initialValues = React.useMemo(() => {
+    if (headerDraft) return headerDraft as InspectionHeader;
+    
+    return {
       ...DEFAULT_HEADER,
       // User Profile Defaults
       portOfLoading: companyProfile.defaultPortOfLoading || '',
@@ -36,8 +40,21 @@ export default function NewMarking() {
       termsOfPayment: selectedCustomer?.defaultTermsOfPayment || '',
       hsCode: selectedCustomer?.defaultHsCode || '',
       currency: selectedCustomer?.defaultCurrency || companyProfile.defaultCurrency || 'USD',
-    },
+    };
+  }, [headerDraft, companyProfile, selectedCustomer]);
+
+  const { register, handleSubmit, watch, setValue } = useForm<InspectionHeader>({
+    defaultValues: initialValues,
   });
+
+  // Persist form state to store as user types
+  const formValues = watch();
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      updateHeaderDraft(formValues);
+    }, 1000); // 1s debounce to avoid excessive store updates
+    return () => clearTimeout(timer);
+  }, [formValues, updateHeaderDraft]);
 
   const calculationMode = watch('calculationMode');
 

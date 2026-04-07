@@ -24,14 +24,17 @@ interface InspectionStore {
   discardActiveInspection: () => void;
   checkDraftExpiration: () => void;
 
-  addBlock: (l1: number, l2: number, l3: number, remarks?: string, allowance?: number, type?: 'small' | 'large' | 'other', photoUrl?: string, photoUrls?: string[]) => void;
-  updateBlock: (blockId: string, l1: number, l2: number, l3: number, remarks?: string, allowance?: number, type?: 'small' | 'large' | 'other', photoUrl?: string, photoUrls?: string[]) => void;
+  addBlock: (l1: number, l2: number, l3: number, remarks?: string, allowance?: number, type?: 'small' | 'large' | 'other', pricePerCbm?: number, photoUrl?: string, photoUrls?: string[]) => void;
+  updateBlock: (blockId: string, l1: number, l2: number, l3: number, remarks?: string, allowance?: number, type?: 'small' | 'large' | 'other', pricePerCbm?: number, photoUrl?: string, photoUrls?: string[]) => void;
   deleteBlock: (blockId: string) => void;
   updateHeader: (header: InspectionHeader) => void;
   finishInspection: () => Promise<string>;
   uploadPhoto: (file: File) => Promise<string>;
   clearActiveInspection: () => void;
   updateDraftBlock: (draft: Inspection['draftBlock']) => void;
+  updateInspectionPhotos: (photos: string[]) => void;
+  headerDraft: Partial<InspectionHeader> | null;
+  updateHeaderDraft: (draft: Partial<InspectionHeader> | null) => void;
 
   customers: Customer[];
   selectedCustomerId: string | null;
@@ -80,11 +83,18 @@ export const useInspectionStore = create<InspectionStore>()(
       setSyncStatus: (status) => set({ syncStatus: status }),
 
       activeInspection: null,
+      headerDraft: null,
+
+      updateHeaderDraft: (draft) => set({ headerDraft: draft }),
 
       startNewInspection: (header) => {
         const inspection: Inspection = {
           id: generateId(),
-          header,
+          header: {
+            ...header,
+            type1Allowance: header.allowanceSmall || header.type1Allowance || 15,
+            type1Price: header.pricePerCbm || header.type1Price || 0,
+          },
           blocks: [],
           totals: { totalBlocks: 0, totalGrossCbm: 0, totalNetCbm: 0, totalValue: 0 },
           createdAt: new Date().toISOString(),
@@ -92,7 +102,7 @@ export const useInspectionStore = create<InspectionStore>()(
           savedToCloud: false,
           status: 'draft',
         };
-        set({ activeInspection: inspection });
+        set({ activeInspection: inspection, headerDraft: null });
       },
 
       uploadPhoto: async (file) => {
@@ -125,6 +135,22 @@ export const useInspectionStore = create<InspectionStore>()(
         });
       },
 
+      updateInspectionPhotos: (photos) => {
+        const { activeInspection } = get();
+        if (!activeInspection) return;
+        set({
+          activeInspection: {
+            ...activeInspection,
+            header: {
+              ...activeInspection.header,
+              inspectionPhotos: photos,
+            },
+            updatedAt: new Date().toISOString(),
+          }
+        });
+        setTimeout(() => get().syncActiveToDb(), 100);
+      },
+
       discardActiveInspection: () => {
         set({ activeInspection: null });
       },
@@ -142,7 +168,7 @@ export const useInspectionStore = create<InspectionStore>()(
         }
       },
 
-      addBlock: (l1, l2, l3, remarks = '', allowance, type = 'small', photoUrl, photoUrls) => {
+      addBlock: (l1, l2, l3, remarks = '', allowance, type = 'small', pricePerCbm, photoUrl, photoUrls) => {
         const { activeInspection } = get();
         if (!activeInspection) return;
         const { header, blocks } = activeInspection;
@@ -159,6 +185,7 @@ export const useInspectionStore = create<InspectionStore>()(
           remarks,
           allowance,
           type,
+          pricePerCbm,
           photoUrl,
           photoUrls
         );
@@ -174,7 +201,7 @@ export const useInspectionStore = create<InspectionStore>()(
         setTimeout(() => get().syncActiveToDb(), 100);
       },
 
-      updateBlock: (blockId, l1, l2, l3, remarks, allowance, type, photoUrl, photoUrls) => {
+      updateBlock: (blockId, l1, l2, l3, remarks, allowance, type, pricePerCbm, photoUrl, photoUrls) => {
         const { activeInspection } = get();
         if (!activeInspection) return;
         const { header } = activeInspection;
@@ -190,6 +217,7 @@ export const useInspectionStore = create<InspectionStore>()(
               remarks !== undefined ? remarks : b.remarks,
               allowance !== undefined ? allowance : b.allowance,
               type !== undefined ? type : b.type || 'small',
+              pricePerCbm !== undefined ? pricePerCbm : b.pricePerCbm,
               photoUrl !== undefined ? photoUrl : b.photoUrl,
               photoUrls !== undefined ? photoUrls : b.photoUrls
             )
@@ -234,8 +262,9 @@ export const useInspectionStore = create<InspectionStore>()(
             b.l3,
             header,
             b.remarks,
-            undefined, // Passing undefined here will force buildBlock to re-inherit from header
+            undefined, // allowance
             b.type || 'small',
+            b.pricePerCbm,
             b.photoUrl,
             b.photoUrls
           )
@@ -574,6 +603,7 @@ export const useInspectionStore = create<InspectionStore>()(
           state.companyProfile = DEFAULT_COMPANY_PROFILE;
           state.savedInspections = [];
           state.activeInspection = null;
+          state.headerDraft = null;
           state.userId = null;
         } else if (currentUserId) {
           state.userId = currentUserId;

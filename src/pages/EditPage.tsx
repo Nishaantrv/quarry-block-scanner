@@ -78,17 +78,18 @@ export default function EditPage() {
   };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>, blockId: string) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     const block = inspection.blocks.find(b => b.id === blockId);
     if (!block) return;
 
     try {
       setIsUploading(blockId);
-      const url = await uploadPhoto(file);
-      const newPhotoUrls = [...(block.photoUrls || []), url];
-      updateBlock(block.id, block.l1, block.l2, block.l3, block.remarks, block.allowance, block.type, undefined, newPhotoUrls);
+      const uploadPromises = Array.from(files).map(file => uploadPhoto(file));
+      const urls = await Promise.all(uploadPromises);
+      const newPhotoUrls = [...(block.photoUrls || []), ...urls];
+      updateBlock(block.id, block.l1, block.l2, block.l3, block.remarks, block.allowance, block.type, undefined, undefined, newPhotoUrls);
     } catch (error: any) {
       console.error('Upload failed', error);
     } finally {
@@ -194,7 +195,7 @@ export default function EditPage() {
                     ref={fileInputRef}
                     onChange={(e) => handlePhotoUpload(e, block.id)}
                     accept="image/*"
-                    capture="environment"
+                    multiple
                   />
                   <Button
                     variant="outline"
@@ -218,7 +219,7 @@ export default function EditPage() {
                       <button
                         onClick={() => {
                           const newUrls = block.photoUrls!.filter((_, i) => i !== idx);
-                          updateBlock(block.id, block.l1, block.l2, block.l3, block.remarks, block.allowance, block.type, undefined, newUrls);
+                          updateBlock(block.id, block.l1, block.l2, block.l3, block.remarks, block.allowance, block.type, undefined, undefined, newUrls);
                         }}
                         className="absolute -top-1 -right-1 bg-destructive text-white rounded-full p-0.5 shadow-lg"
                       >

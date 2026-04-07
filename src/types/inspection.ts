@@ -84,6 +84,14 @@ export interface InspectionHeader {
   quarryCode: string;
   calculationMode: 'gross' | 'net';
   abstractDetails?: string;
+  // Persistent Type Presets
+  type1Allowance: number;
+  type1Price: number;
+  type2Allowance?: number;
+  type2Price?: number;
+  type3Allowance?: number;
+  type3Price?: number;
+  inspectionPhotos?: string[];
 };
 
 export interface Block {
@@ -100,6 +108,7 @@ export interface Block {
   type?: 'small' | 'large' | 'other';
   photoUrl?: string;
   photoUrls?: string[];
+  pricePerCbm?: number;
 }
 
 export interface InspectionTotals {
@@ -155,6 +164,8 @@ export const DEFAULT_HEADER: InspectionHeader = {
   hsCode: '',
   countryOfOrigin: '',
   abstractDetails: '',
+  type1Allowance: 15,
+  type1Price: 0,
 };
 
 export const DEFAULT_COMPANY_PROFILE: CompanyProfile = {

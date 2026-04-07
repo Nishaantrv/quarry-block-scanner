@@ -53,10 +53,12 @@ export function buildBlock(
   remarks: string = '',
   blockAllowance?: number,
   type: 'small' | 'large' | 'other' = 'small',
+  blockPricePerCbm?: number,
   photoUrl?: string,
   photoUrls?: string[]
 ): Block {
   const finalAllowance = resolveAllowance(type, header, blockAllowance);
+  const finalPrice = blockPricePerCbm !== undefined ? blockPricePerCbm : header.pricePerCbm;
   const grossCbm = calcGrossCbm(l1, l2, l3);
 
   let netCbm: number;
@@ -68,8 +70,8 @@ export function buildBlock(
     netCbm = calcNetCbm(l1, l2, l3, finalAllowance);
   }
 
-  const value = calcValue(netCbm, header.pricePerCbm);
-  return { id, blockNo, l1, l2, l3, grossCbm, netCbm, value, remarks, allowance: finalAllowance, type, photoUrl, photoUrls };
+  const value = calcValue(netCbm, finalPrice);
+  return { id, blockNo, l1, l2, l3, grossCbm, netCbm, value, remarks, allowance: finalAllowance, type, photoUrl, photoUrls, pricePerCbm: finalPrice };
 }
 
 export function recalcBlock(block: Block, header: any, newBlockNo?: number): Block {
@@ -83,6 +85,7 @@ export function recalcBlock(block: Block, header: any, newBlockNo?: number): Blo
     block.remarks,
     block.allowance, // Pass existing allowance
     block.type || 'small',
+    block.pricePerCbm,
     block.photoUrl,
     block.photoUrls
   );
