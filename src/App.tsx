@@ -97,7 +97,7 @@ const AppRoutes = () => {
           <Route path="/finish-details" element={<ProtectedRoute><FinishDetailsPage /></ProtectedRoute>} />
           <Route path="/inspection-list" element={<ProtectedRoute><InspectionListPage /></ProtectedRoute>} />
           <Route path="/marking/:id/edit" element={<ProtectedRoute><EditPage /></ProtectedRoute>} />
-          <Route path="/abstract-view/:id" element={<ProtectedRoute><AbstractViewPage /></ProtectedRoute>} />
+          <Route path="/abstract-edit/:id" element={<ProtectedRoute><AbstractViewPage /></ProtectedRoute>} />
           <Route path="/export" element={<ProtectedRoute><ExportPage /></ProtectedRoute>} />
           <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
           <Route path="/my-account" element={<ProtectedRoute><MyAccountPage /></ProtectedRoute>} />

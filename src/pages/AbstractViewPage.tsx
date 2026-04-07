@@ -62,7 +62,7 @@ export default function AbstractViewPage() {
         try {
             await finishInspection();
             toast({ title: 'Inspection Complete', description: 'Saved successfully.' });
-            navigate(`/abstract-view/${activeInspection.id}`);
+            navigate(`/abstract-edit/${activeInspection.id}`);
         } catch (err: any) {
             toast({ title: 'Error', description: 'Failed to save changes.', variant: 'destructive' });
         } finally {
