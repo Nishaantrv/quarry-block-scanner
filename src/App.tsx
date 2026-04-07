@@ -18,7 +18,6 @@ import MyAccountPage from "./pages/MyAccountPage";
 import AuthPage from "./pages/AuthPage";
 import FinishDetailsPage from "./pages/FinishDetailsPage";
 import InspectionListPage from "./pages/InspectionListPage";
-import AbstractEditPage from "./pages/AbstractEditPage";
 import AbstractViewPage from "./pages/AbstractViewPage";
 import NotFound from "./pages/NotFound";
 
@@ -97,7 +96,6 @@ const AppRoutes = () => {
           <Route path="/finish-details" element={<ProtectedRoute><FinishDetailsPage /></ProtectedRoute>} />
           <Route path="/inspection-list" element={<ProtectedRoute><InspectionListPage /></ProtectedRoute>} />
           <Route path="/marking/:id/edit" element={<ProtectedRoute><EditPage /></ProtectedRoute>} />
-          <Route path="/abstract-edit/:id" element={<ProtectedRoute><AbstractEditPage /></ProtectedRoute>} />
           <Route path="/abstract-view/:id" element={<ProtectedRoute><AbstractViewPage /></ProtectedRoute>} />
           <Route path="/export" element={<ProtectedRoute><ExportPage /></ProtectedRoute>} />
           <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
