@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Block, CompanyProfile, Customer, Inspection, InspectionHeader, InspectionTotals } from '@/types/inspection';
+import type { Block, BlockTypePreset, CompanyProfile, Customer, Inspection, InspectionHeader, InspectionTotals } from '@/types/inspection';
 import { DEFAULT_COMPANY_PROFILE, DEFAULT_HEADER } from '@/types/inspection';
 import { buildBlock, calcTotals, recalcBlock } from '@/lib/calculations';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,10 +24,13 @@ interface InspectionStore {
   discardActiveInspection: () => void;
   checkDraftExpiration: () => void;
 
-  addBlock: (l1: number, l2: number, l3: number, remarks?: string, allowance?: number, type?: 'small' | 'large' | 'other', pricePerCbm?: number, photoUrl?: string, photoUrls?: string[]) => void;
-  updateBlock: (blockId: string, l1: number, l2: number, l3: number, remarks?: string, allowance?: number, type?: 'small' | 'large' | 'other', pricePerCbm?: number, photoUrl?: string, photoUrls?: string[]) => void;
+  addBlock: (l1: number, l2: number, l3: number, remarks?: string, allowance?: number, type?: string, pricePerCbm?: number, photoUrl?: string, photoUrls?: string[]) => void;
+  updateBlock: (blockId: string, l1: number, l2: number, l3: number, remarks?: string, allowance?: number, type?: string, pricePerCbm?: number, photoUrl?: string, photoUrls?: string[]) => void;
+  updateBlocks: (blocks: Block[]) => void;
   deleteBlock: (blockId: string) => void;
   updateHeader: (header: InspectionHeader) => void;
+  addBlockType: (preset: BlockTypePreset) => void;
+  updateBlockType: (preset: BlockTypePreset) => void;
   finishInspection: () => Promise<string>;
   uploadPhoto: (file: File) => Promise<string>;
   clearActiveInspection: () => void;
@@ -92,8 +95,7 @@ export const useInspectionStore = create<InspectionStore>()(
           id: generateId(),
           header: {
             ...header,
-            type1Allowance: header.allowanceSmall || header.type1Allowance || 15,
-            type1Price: header.pricePerCbm || header.type1Price || 0,
+            blockTypes: header.blockTypes?.length ? header.blockTypes : [{ id: '1', allowance: 15, pricePerCbm: header.pricePerCbm || 0 }],
           },
           blocks: [],
           totals: { totalBlocks: 0, totalGrossCbm: 0, totalNetCbm: 0, totalValue: 0 },
@@ -168,7 +170,7 @@ export const useInspectionStore = create<InspectionStore>()(
         }
       },
 
-      addBlock: (l1, l2, l3, remarks = '', allowance, type = 'small', pricePerCbm, photoUrl, photoUrls) => {
+      addBlock: (l1, l2, l3, remarks = '', allowance, type = '1', pricePerCbm, photoUrl, photoUrls) => {
         const { activeInspection } = get();
         if (!activeInspection) return;
         const { header, blocks } = activeInspection;
@@ -216,13 +218,27 @@ export const useInspectionStore = create<InspectionStore>()(
               header,
               remarks !== undefined ? remarks : b.remarks,
               allowance !== undefined ? allowance : b.allowance,
-              type !== undefined ? type : b.type || 'small',
+              type !== undefined ? type : b.type || '1',
               pricePerCbm !== undefined ? pricePerCbm : b.pricePerCbm,
               photoUrl !== undefined ? photoUrl : b.photoUrl,
               photoUrls !== undefined ? photoUrls : b.photoUrls
             )
             : b
         );
+        set({
+          activeInspection: {
+            ...activeInspection,
+            blocks: newBlocks,
+            totals: calcTotals(newBlocks),
+            updatedAt: new Date().toISOString(),
+          },
+        });
+        setTimeout(() => get().syncActiveToDb(), 100);
+      },
+
+      updateBlocks: (newBlocks) => {
+        const { activeInspection } = get();
+        if (!activeInspection) return;
         set({
           activeInspection: {
             ...activeInspection,
@@ -263,7 +279,7 @@ export const useInspectionStore = create<InspectionStore>()(
             header,
             b.remarks,
             undefined, // allowance
-            b.type || 'small',
+            b.type || '1',
             b.pricePerCbm,
             b.photoUrl,
             b.photoUrls
@@ -277,6 +293,46 @@ export const useInspectionStore = create<InspectionStore>()(
             totals: calcTotals(newBlocks),
             updatedAt: new Date().toISOString(),
           },
+        });
+        setTimeout(() => get().syncActiveToDb(), 100);
+      },
+
+      addBlockType: (preset) => {
+        const { activeInspection } = get();
+        if (!activeInspection) return;
+        const updatedHeader = {
+          ...activeInspection.header,
+          blockTypes: [...(activeInspection.header.blockTypes || []), preset]
+        };
+        set({
+          activeInspection: {
+            ...activeInspection,
+            header: updatedHeader,
+            updatedAt: new Date().toISOString(),
+          }
+        });
+        setTimeout(() => get().syncActiveToDb(), 100);
+      },
+
+      updateBlockType: (preset) => {
+        const { activeInspection } = get();
+        if (!activeInspection) return;
+        const updatedHeader = {
+          ...activeInspection.header,
+          blockTypes: (activeInspection.header.blockTypes || []).map(p => p.id === preset.id ? preset : p)
+        };
+        // Re-calculate all blocks using this type
+        const newBlocks = activeInspection.blocks.map(b => 
+          b.type === preset.id ? buildBlock(b.id, b.blockNo, b.l1, b.l2, b.l3, updatedHeader, b.remarks, undefined, b.type, undefined, b.photoUrl, b.photoUrls) : b
+        );
+        set({
+          activeInspection: {
+            ...activeInspection,
+            header: updatedHeader,
+            blocks: newBlocks,
+            totals: calcTotals(newBlocks),
+            updatedAt: new Date().toISOString(),
+          }
         });
         setTimeout(() => get().syncActiveToDb(), 100);
       },

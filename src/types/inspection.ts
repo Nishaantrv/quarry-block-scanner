@@ -48,6 +48,12 @@ export interface Customer {
   defaultHsCode?: string;
 }
 
+export interface BlockTypePreset {
+  id: string; // "1", "2", "3"
+  allowance: number;
+  pricePerCbm: number;
+}
+
 export interface InspectionHeader {
   // Customer
   consignee: string;
@@ -68,15 +74,11 @@ export interface InspectionHeader {
   currency: string;
   termsOfDelivery: string;
   termsOfPayment: string;
-  pricePerCbm: number;
+  pricePerCbm: number; // Legacy/Default base price
   exporterRefNumber: string;
   hsCode?: string;
   countryOfOrigin?: string;
   // Inspection settings
-  allowance: number; // legacy default
-  allowanceSmall: number; // default 15
-  allowanceLarge: number; // default 20
-  allowanceOther: number; // default 0
   startingBlockNumber: number; // default 1
   // Stone description
   marksAndNos: string;
@@ -84,13 +86,8 @@ export interface InspectionHeader {
   quarryCode: string;
   calculationMode: 'gross' | 'net';
   abstractDetails?: string;
-  // Persistent Type Presets
-  type1Allowance: number;
-  type1Price: number;
-  type2Allowance?: number;
-  type2Price?: number;
-  type3Allowance?: number;
-  type3Price?: number;
+  // Dynamic Type Presets
+  blockTypes: BlockTypePreset[];
   inspectionPhotos?: string[];
 };
 
@@ -105,7 +102,7 @@ export interface Block {
   value: number;
   remarks?: string;
   allowance?: number;
-  type?: 'small' | 'large' | 'other';
+  type?: string; // "1", "2", "3" etc.
   photoUrl?: string;
   photoUrls?: string[];
   pricePerCbm?: number;
@@ -132,7 +129,7 @@ export interface Inspection {
     l2: string;
     l3: string;
     remarks: string;
-    type: 'small' | 'large' | 'other';
+    type: string;
     manualAllowance: string;
   };
 }
@@ -152,10 +149,6 @@ export const DEFAULT_HEADER: InspectionHeader = {
   termsOfPayment: '',
   pricePerCbm: 0,
   exporterRefNumber: '',
-  allowance: 15,
-  allowanceSmall: 15,
-  allowanceLarge: 20,
-  allowanceOther: 0,
   startingBlockNumber: 1,
   marksAndNos: '',
   stoneType: '',
@@ -164,8 +157,7 @@ export const DEFAULT_HEADER: InspectionHeader = {
   hsCode: '',
   countryOfOrigin: '',
   abstractDetails: '',
-  type1Allowance: 15,
-  type1Price: 0,
+  blockTypes: [{ id: '1', allowance: 15, pricePerCbm: 0 }],
 };
 
 export const DEFAULT_COMPANY_PROFILE: CompanyProfile = {

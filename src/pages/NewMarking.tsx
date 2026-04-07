@@ -59,13 +59,17 @@ export default function NewMarking() {
   const calculationMode = watch('calculationMode');
 
   const onSubmit = (data: InspectionHeader) => {
-    data.pricePerCbm = Number(data.pricePerCbm);
-    data.allowanceSmall = Number(data.allowanceSmall);
-    data.allowanceLarge = Number(data.allowanceLarge);
-    data.allowanceOther = Number(data.allowanceOther);
-    data.allowance = data.allowanceSmall; // Keep legacy field sync'd
-    data.startingBlockNumber = Number(data.startingBlockNumber);
-    startNewInspection(data);
+    const allowance = Number((data as any).defaultAllowance || 15);
+    const price = Number(data.pricePerCbm || 0);
+
+    const headerData: InspectionHeader = {
+      ...data,
+      pricePerCbm: price,
+      startingBlockNumber: Number(data.startingBlockNumber || 1),
+      blockTypes: [{ id: '1', allowance, pricePerCbm: price }]
+    };
+
+    startNewInspection(headerData);
     navigate('/marking');
   };
 
@@ -153,11 +157,7 @@ export default function NewMarking() {
           </h2>
           <GlassContainer className="p-4 space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Small Allw. (cm)" type="number" step="any" placeholder="15" {...register('allowanceSmall')} />
-              <Field label="Large Allw. (cm)" type="number" step="any" placeholder="20" {...register('allowanceLarge')} />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Other Allw. (cm)" type="number" step="any" placeholder="0" {...register('allowanceOther')} />
+              <Field label="Allowance (cm)" type="number" step="any" placeholder="15" {...register('defaultAllowance' as any)} />
               <Field label="Start Block #" type="number" placeholder="1" {...register('startingBlockNumber')} />
             </div>
             <div className="grid grid-cols-1 gap-4">

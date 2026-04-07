@@ -16,22 +16,19 @@ export function calcValue(netCbm: number, pricePerCbm: number): number {
   return netCbm * pricePerCbm;
 }
 
-export function resolveAllowance(type: 'small' | 'large' | 'other' = 'small', header: any, blockAllowance?: number | string): number {
+export function resolveAllowance(type: string = '1', header: any, blockAllowance?: number | string): number {
   // If blockAllowance is a valid number (> 0 or exactly 0 if intended), use it
   const bAllw = typeof blockAllowance === 'string' ? parseFloat(blockAllowance) : blockAllowance;
   if (bAllw !== undefined && Number.isFinite(bAllw)) {
     return bAllw;
   }
 
-  // Fallback to header type-specific values
-  let headerValue: any;
-  if (type === 'small') headerValue = header.allowanceSmall;
-  else if (type === 'large') headerValue = header.allowanceLarge;
-  else if (type === 'other') headerValue = header.allowanceOther;
-
-  const hAllw = Number(headerValue);
-  if (headerValue !== undefined && headerValue !== '' && Number.isFinite(hAllw)) {
-    return hAllw;
+  // Fallback to header blockTypes array
+  if (Array.isArray(header.blockTypes)) {
+    const preset = header.blockTypes.find((p: any) => p.id === type);
+    if (preset) {
+      return Number(preset.allowance);
+    }
   }
 
   // Fallback to legacy allowance or hardcoded default
@@ -52,13 +49,26 @@ export function buildBlock(
   header: any, // Using any here to avoid circular dependency issues if they arise, but it represents InspectionHeader
   remarks: string = '',
   blockAllowance?: number,
-  type: 'small' | 'large' | 'other' = 'small',
+  type: string = '1',
   blockPricePerCbm?: number,
   photoUrl?: string,
   photoUrls?: string[]
 ): Block {
   const finalAllowance = resolveAllowance(type, header, blockAllowance);
-  const finalPrice = blockPricePerCbm !== undefined ? blockPricePerCbm : header.pricePerCbm;
+  
+  // Find price from types if not provided
+  let finalPrice = blockPricePerCbm;
+  if (finalPrice === undefined && Array.isArray(header.blockTypes)) {
+    const preset = header.blockTypes.find((p: any) => p.id === type);
+    if (preset) {
+      finalPrice = preset.pricePerCbm;
+    }
+  }
+  
+  if (finalPrice === undefined) {
+    finalPrice = header.pricePerCbm;
+  }
+
   const grossCbm = calcGrossCbm(l1, l2, l3);
 
   let netCbm: number;
@@ -83,8 +93,8 @@ export function recalcBlock(block: Block, header: any, newBlockNo?: number): Blo
     block.l3,
     header,
     block.remarks,
-    block.allowance, // Pass existing allowance
-    block.type || 'small',
+    undefined, // Re-calculating allowance from header
+    block.type || '1',
     block.pricePerCbm,
     block.photoUrl,
     block.photoUrls

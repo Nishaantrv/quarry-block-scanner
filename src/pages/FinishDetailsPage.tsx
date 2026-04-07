@@ -35,9 +35,7 @@ export default function FinishDetailsPage() {
         const data = { ...formValues };
         const numericFields: (keyof InspectionHeader)[] = [
             'pricePerCbm',
-            'allowanceSmall',
-            'allowanceLarge',
-            'allowanceOther',
+            'pricePerCbm',
             'startingBlockNumber'
         ];
 
@@ -48,9 +46,7 @@ export default function FinishDetailsPage() {
             }
         });
 
-        if (data.allowanceSmall !== undefined) {
-            data.allowance = Number(data.allowanceSmall);
-        }
+
 
         // Debounced update to store
         const timer = setTimeout(() => {
@@ -72,9 +68,7 @@ export default function FinishDetailsPage() {
         // Only convert numeric fields if they are present in the form data
         const numericFields: (keyof InspectionHeader)[] = [
             'pricePerCbm',
-            'allowanceSmall',
-            'allowanceLarge',
-            'allowanceOther',
+            'pricePerCbm',
             'startingBlockNumber'
         ];
 
@@ -88,9 +82,7 @@ export default function FinishDetailsPage() {
             }
         });
 
-        if (data.allowanceSmall !== undefined) {
-            data.allowance = Number(data.allowanceSmall); // Sync legacy
-        }
+
 
         // Apply the completed details to the store
         updateHeader({ ...inspection.header, ...data });

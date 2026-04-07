@@ -21,13 +21,15 @@ export default function MarkingPage() {
   const saveInspection = useInspectionStore((s) => s.saveInspection);
   // finishInspection is handled on FinishDetailsPage
   const updateHeader = useInspectionStore((s) => s.updateHeader);
+  const addBlockType = useInspectionStore((s) => s.addBlockType);
+  const updateBlockType = useInspectionStore((s) => s.updateBlockType);
   const updateDraftBlock = useInspectionStore((s) => s.updateDraftBlock);
 
   const [l1, setL1] = useState('');
   const [l2, setL2] = useState('');
   const [l3, setL3] = useState('');
   const [remarks, setRemarks] = useState('');
-  const [blockType, setBlockType] = useState<'small' | 'large' | 'other'>('small');
+  const [blockType, setBlockType] = useState<string>('1');
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [rotation, setRotation] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -39,7 +41,7 @@ export default function MarkingPage() {
   // Edit start info panel
   const [showEditHeader, setShowEditHeader] = useState(false);
   const [showEditTypeModal, setShowEditTypeModal] = useState(false);
-  const [activeType, setActiveType] = useState<'1' | '2' | '3'>('1');
+  const [activeType, setActiveType] = useState<string>('1');
 
   const l1Ref = useRef<HTMLInputElement>(null);
   const l2Ref = useRef<HTMLInputElement>(null);
@@ -104,7 +106,7 @@ export default function MarkingPage() {
     setL2(String(block.l2));
     setL3(String(block.l3));
     setRemarks(block.remarks || '');
-    setBlockType(block.type || 'small');
+    setBlockType(block.type || '1');
     setPhotoUrls(block.photoUrls || (block.photoUrl ? [block.photoUrl] : []));
     setRotation(0);
     setCurrentIndex(index);
@@ -138,7 +140,7 @@ export default function MarkingPage() {
     setL2('');
     setL3('');
     setRemarks('');
-    setBlockType('small');
+    setBlockType('1');
     setPhotoUrls([]);
     setRotation(0);
     setCurrentIndex(-1);
@@ -161,17 +163,11 @@ export default function MarkingPage() {
     }
 
     const h = inspection.header;
-    const allowanceValue = 
-      activeType === '1' ? h.type1Allowance :
-      activeType === '2' ? (h.type2Allowance ?? h.type1Allowance) :
-      (h.type3Allowance ?? h.type1Allowance);
-    
-    const priceValue = 
-      activeType === '1' ? h.type1Price :
-      activeType === '2' ? (h.type2Price ?? h.type1Price) :
-      (h.type3Price ?? h.type1Price);
+    const preset = h.blockTypes.find((p: any) => p.id === activeType) || h.blockTypes[0];
+    const allowanceValue = preset.allowance;
+    const priceValue = preset.pricePerCbm;
 
-    addBlock(v1, v2, v3, remarks, allowanceValue, 'small', priceValue, undefined, photoUrls);
+    addBlock(v1, v2, v3, remarks, allowanceValue, activeType, priceValue, undefined, photoUrls);
 
     // Feedback calculations
     const n1 = Math.max(v1 - allowanceValue, 0);
@@ -192,24 +188,10 @@ export default function MarkingPage() {
     setTimeout(() => setLastAdded(null), 2500);
   };
 
-  const confirmEditType = (allowance: number, price: number) => {
-    const updatedHeader = { ...inspection.header };
-    if (activeType === '1') {
-      updatedHeader.type1Allowance = allowance;
-      updatedHeader.type1Price = price;
-      // Also update legacy fields for compatibility
-      updatedHeader.allowanceSmall = allowance;
-      updatedHeader.pricePerCbm = price;
-    } else if (activeType === '2') {
-      updatedHeader.type2Allowance = allowance;
-      updatedHeader.type2Price = price;
-    } else {
-      updatedHeader.type3Allowance = allowance;
-      updatedHeader.type3Price = price;
-    }
-    updateHeader(updatedHeader);
+  const confirmEditType = (allowance: number, pricePerCbm: number) => {
+    updateBlockType({ id: activeType, allowance, pricePerCbm });
     setShowEditTypeModal(false);
-    toast({ title: `Type ${activeType} Updated`, description: `Allowance: ${allowance}cm, Price: ${price}` });
+    toast({ title: `Type T${activeType} Updated`, description: `Allowance: ${allowance}cm, Price: ${pricePerCbm}` });
   };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -265,10 +247,8 @@ export default function MarkingPage() {
     const v3 = parseFloat(l3);
     if (isNaN(v1) || isNaN(v2) || isNaN(v3)) return null;
     const h = inspection.header;
-    const currentAllowance = 
-      activeType === '1' ? h.type1Allowance :
-      activeType === '2' ? (h.type2Allowance ?? h.type1Allowance) :
-      (h.type3Allowance ?? h.type1Allowance);
+    const preset = h.blockTypes.find((p: any) => p.id === activeType) || h.blockTypes[0];
+    const currentAllowance = preset.allowance;
 
     const n1 = Math.max(v1 - currentAllowance, 0);
     const n2 = Math.max(v2 - currentAllowance, 0);
@@ -290,29 +270,44 @@ export default function MarkingPage() {
         </div>
 
         {/* TYPE SWITCHER */}
-        <div className="flex-1 flex items-center justify-center gap-1.5 bg-card/50 border border-border p-1 rounded-full px-2 max-w-[200px]">
+        <div className="flex-1 flex items-center justify-center gap-1.5 bg-card/50 border border-border p-0.5 rounded-full px-1 max-w-[220px]">
           <Button 
             size="icon" 
             variant="ghost" 
-            className="h-7 w-7 rounded-full bg-primary/10 text-primary"
-            onClick={() => setShowEditTypeModal(true)}
+            className="h-8 w-8 rounded-full bg-primary/10 text-primary hover:bg-primary/20 shrink-0"
+            onClick={() => {
+              const types = inspection.header.blockTypes || [];
+              const nextId = String(types.length + 1);
+              const lastType = types[types.length - 1];
+              addBlockType({ 
+                id: nextId, 
+                allowance: lastType?.allowance || 15, 
+                pricePerCbm: lastType?.pricePerCbm || 0 
+              });
+              setActiveType(nextId);
+              toast({ title: `Type T${nextId} Added`, description: "Configure its allowance and price if needed." });
+            }}
           >
             <Plus className="h-4 w-4" />
           </Button>
           <div className="h-5 w-[1px] bg-border mx-0.5" />
-          <div className="flex gap-1">
-            {['1', '2', '3'].map((t) => (
+          <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+            {(inspection.header.blockTypes || []).map((p) => (
               <button
-                key={t}
-                onClick={() => setActiveType(t as any)}
+                key={p.id}
+                onClick={() => setActiveType(p.id)}
+                onDoubleClick={() => {
+                    setActiveType(p.id);
+                    setShowEditTypeModal(true);
+                }}
                 className={cn(
-                  "h-7 px-2.5 rounded-full text-[10px] font-black transition-all",
-                  activeType === t 
+                  "h-8 px-3 rounded-full text-[10px] font-black transition-all shrink-0 uppercase",
+                  activeType === p.id 
                     ? "bg-primary text-primary-foreground shadow-sm scale-105" 
                     : "text-muted-foreground hover:bg-muted"
                 )}
               >
-                T{t}
+                T{p.id}
               </button>
             ))}
           </div>
@@ -584,10 +579,6 @@ function EditHeaderPanel({ header, blocksCount, onClose, onSave }: EditHeaderPan
 
   const onSubmit = (data: InspectionHeader) => {
     data.pricePerCbm = Number(data.pricePerCbm);
-    data.allowanceSmall = Number(data.allowanceSmall);
-    data.allowanceLarge = Number(data.allowanceLarge);
-    data.allowanceOther = Number(data.allowanceOther);
-    data.allowance = data.allowanceSmall;
     data.startingBlockNumber = Number(data.startingBlockNumber);
     onSave(data);
   };
@@ -676,22 +667,15 @@ function EditHeaderPanel({ header, blocksCount, onClose, onSave }: EditHeaderPan
                 <Ruler className="w-3.5 h-3.5" /> Inspection Settings
               </h3>
               <div className="space-y-4 bg-card/50 rounded-2xl border border-border p-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <PanelField label="Small Allw. (cm)" type="number" step="any" {...register('allowanceSmall')} />
-                  <PanelField label="Large Allw. (cm)" type="number" step="any" {...register('allowanceLarge')} />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <PanelField label="Other Allw." type="number" step="any" {...register('allowanceOther')} />
-                  <div className="space-y-1.5">
-                    <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground pl-1">
-                      Start Block #
-                    </Label>
-                    <Input
-                      type="number"
-                      {...register('startingBlockNumber')}
-                      className="h-11 font-semibold text-base bg-background/50"
-                    />
-                  </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground pl-1">
+                    Start Block #
+                  </Label>
+                  <Input
+                    type="number"
+                    {...register('startingBlockNumber')}
+                    className="h-11 font-semibold text-base bg-background/50"
+                  />
                 </div>
                 {blocksCount > 0 && (
                   <p className="text-[10px] text-amber-500 pl-1 font-medium -mt-1">
@@ -789,24 +773,18 @@ PanelField.displayName = 'PanelField';
 ───────────────────────────────────────────────────────────── */
 interface EditTypeModalProps {
   header: InspectionHeader;
-  activeType: '1' | '2' | '3';
+  activeType: string;
   onClose: () => void;
   onConfirm: (allowance: number, price: number) => void;
 }
 
 function EditTypeModal({ header, activeType, onClose, onConfirm }: EditTypeModalProps) {
-  const currentAllowance = 
-    activeType === '1' ? header.type1Allowance :
-    activeType === '2' ? (header.type2Allowance ?? header.type1Allowance) :
-    (header.type3Allowance ?? header.type1Allowance);
+  const preset = header.blockTypes.find(p => p.id === activeType) || header.blockTypes[0];
 
-  const currentPrice = 
-    activeType === '1' ? header.type1Price :
-    activeType === '2' ? (header.type2Price ?? header.type1Price) :
-    (header.type3Price ?? header.type1Price);
+  const [allowance, setAllowance] = useState(String(preset.allowance));
+  const [price, setPrice] = useState(String(preset.pricePerCbm));
 
-  const [allowance, setAllowance] = useState(String(currentAllowance));
-  const [price, setPrice] = useState(String(currentPrice));
+  const isT1 = activeType === '1';
 
   return (
     <>
@@ -827,8 +805,17 @@ function EditTypeModal({ header, activeType, onClose, onConfirm }: EditTypeModal
               type="number"
               value={allowance}
               onChange={(e) => setAllowance(e.target.value)}
-              className="h-14 text-2xl font-black tabular-nums bg-card border-2 border-primary/20 focus:border-primary"
+              disabled={isT1}
+              className={cn(
+                "h-14 text-2xl font-black tabular-nums bg-card border-2 border-primary/20 focus:border-primary",
+                isT1 && "opacity-60 grayscale cursor-not-allowed"
+              )}
             />
+            {isT1 && (
+              <p className="text-[10px] text-amber-500 font-bold uppercase mt-1 pl-1">
+                T1 Allowance is static and cannot be changed
+              </p>
+            )}
           </div>
 
           <div className="space-y-1.5">

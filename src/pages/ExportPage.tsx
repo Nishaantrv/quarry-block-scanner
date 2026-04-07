@@ -1,12 +1,12 @@
 import React, { useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useInspectionStore } from '@/store/inspectionStore';
-import { numberToWords } from '@/lib/calculations';
+import { numberToWords, calcTotals, buildBlock } from '@/lib/calculations';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import type { InspectionHeader, CompanyProfile, Customer } from '@/types/inspection';
+import type { InspectionHeader, CompanyProfile, Customer, Block } from '@/types/inspection';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -31,6 +31,7 @@ export default function ExportPage() {
   const companyProfile = useInspectionStore((s) => s.companyProfile);
   const updateHeader = useInspectionStore((s) => s.updateHeader);
   const setCompanyProfile = useInspectionStore((s) => s.setCompanyProfile);
+  const updateBlocks = useInspectionStore((s) => s.updateBlocks);
 
   const [activeDoc, setActiveDoc] = React.useState<DocType>('normal-report');
   const printRef = useRef<HTMLDivElement>(null);
@@ -39,6 +40,7 @@ export default function ExportPage() {
   const [isEditing, setIsEditing] = React.useState(false);
   const [editedHeader, setEditedHeader] = React.useState<InspectionHeader | null>(null);
   const [editedProfile, setEditedProfile] = React.useState<CompanyProfile | null>(null);
+  const [editedBlocks, setEditedBlocks] = React.useState<Block[]>([]);
 
   useEffect(() => {
     if (inspection) {
@@ -46,6 +48,9 @@ export default function ExportPage() {
     }
     if (companyProfile) {
       setEditedProfile(companyProfile);
+    }
+    if (inspection) {
+      setEditedBlocks(inspection.blocks);
     }
   }, [inspection, companyProfile]);
 
@@ -57,6 +62,7 @@ export default function ExportPage() {
   const handleStartEdit = () => {
     setEditedHeader({ ...inspection.header });
     setEditedProfile({ ...companyProfile });
+    setEditedBlocks([...inspection.blocks]);
     setIsEditing(true);
   };
 
@@ -64,11 +70,13 @@ export default function ExportPage() {
     setIsEditing(false);
     setEditedHeader(inspection.header);
     setEditedProfile(companyProfile);
+    setEditedBlocks(inspection.blocks);
   };
 
   const handleSaveEdit = () => {
     if (editedHeader) updateHeader(editedHeader);
     if (editedProfile) setCompanyProfile(editedProfile);
+    if (editedBlocks.length > 0) updateBlocks(editedBlocks);
     setIsEditing(false);
   };
 
@@ -210,8 +218,10 @@ export default function ExportPage() {
               <DocumentEditor 
                 h={editedHeader!} 
                 cp={editedProfile!} 
+                blocks={editedBlocks}
                 onHeaderChange={setEditedHeader} 
                 onProfileChange={setEditedProfile} 
+                onBlocksChange={setEditedBlocks}
               />
             </div>
 
@@ -226,8 +236,8 @@ export default function ExportPage() {
                       activeDoc={activeDoc} 
                       cp={editedProfile!} 
                       h={editedHeader!} 
-                      blocks={blocks} 
-                      totals={totals} 
+                      blocks={editedBlocks} 
+                      totals={calcTotals(editedBlocks)} 
                       blockRange={blockRange} 
                       isEditing={true}
                       inspectionPhotos={inspection?.header.inspectionPhotos}
@@ -313,7 +323,14 @@ function PreviewContent({ activeDoc, cp, h, blocks, totals, blockRange, isEditin
   );
 }
 
-function DocumentEditor({ h, cp, onHeaderChange, onProfileChange }: { h: InspectionHeader, cp: CompanyProfile, onHeaderChange: (h: any) => void, onProfileChange: (p: any) => void }) {
+function DocumentEditor({ h, cp, blocks, onHeaderChange, onProfileChange, onBlocksChange }: { 
+  h: InspectionHeader, 
+  cp: CompanyProfile, 
+  blocks: Block[],
+  onHeaderChange: (h: any) => void, 
+  onProfileChange: (p: any) => void,
+  onBlocksChange: (blocks: Block[]) => void
+}) {
   const customers = useInspectionStore((s) => s.customers);
   const fetchCustomers = useInspectionStore((s) => s.fetchCustomersFromDb);
 
@@ -354,9 +371,12 @@ function DocumentEditor({ h, cp, onHeaderChange, onProfileChange }: { h: Inspect
     <Card className="flex-1 overflow-hidden flex flex-col glass-panel border-none shadow-none rounded-xl">
       <Tabs defaultValue="general" className="flex-1 flex flex-col overflow-hidden">
         <div className="px-4 pt-4">
-          <TabsList className="grid grid-cols-5 w-full bg-muted/50 p-1">
+          <TabsList className="grid grid-cols-6 w-full bg-muted/50 p-1">
             <TabsTrigger value="general" className="text-[10px] uppercase font-bold px-1 py-2">
               <Settings2 className="h-3 w-3 mr-1" /> General
+            </TabsTrigger>
+            <TabsTrigger value="blocks" className="text-[10px] uppercase font-bold px-1 py-2">
+              <Plus className="h-3 w-3 mr-1" /> Blocks
             </TabsTrigger>
             <TabsTrigger value="company" className="text-[10px] uppercase font-bold px-1 py-2">
               <Building className="h-3 w-3 mr-1" /> Exporter
@@ -374,6 +394,103 @@ function DocumentEditor({ h, cp, onHeaderChange, onProfileChange }: { h: Inspect
         </div>
 
         <ScrollArea className="flex-1 p-4 overflow-y-auto">
+          <TabsContent value="blocks" className="mt-0 space-y-4 pb-4">
+             <div className="space-y-3">
+               {blocks.map((block, idx) => (
+                 <div key={block.id} className="p-3 border rounded-lg bg-card/50 space-y-3">
+                    <div className="flex items-center justify-between border-b pb-2">
+                      <span className="text-[10px] font-black text-primary uppercase tracking-tighter">Block #{block.blockNo}</span>
+                      <span className="text-[10px] font-mono opacity-50">{block.id.slice(0,8)}</span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-[9px] uppercase font-bold opacity-70">Length (L1)</Label>
+                        <Input 
+                          type="number" 
+                          value={block.l1} 
+                          onChange={(e) => {
+                            const newBlocks = [...blocks];
+                            newBlocks[idx] = buildBlock(block.id, block.blockNo, parseInt(e.target.value) || 0, block.l2, block.l3, h, block.remarks, undefined, block.type, block.pricePerCbm, block.photoUrl, block.photoUrls);
+                            onBlocksChange(newBlocks);
+                          }}
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[9px] uppercase font-bold opacity-70">Height (L2)</Label>
+                        <Input 
+                          type="number" 
+                          value={block.l2} 
+                          onChange={(e) => {
+                            const newBlocks = [...blocks];
+                            newBlocks[idx] = buildBlock(block.id, block.blockNo, block.l1, parseInt(e.target.value) || 0, block.l3, h, block.remarks, undefined, block.type, block.pricePerCbm, block.photoUrl, block.photoUrls);
+                            onBlocksChange(newBlocks);
+                          }}
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[9px] uppercase font-bold opacity-70">Width (L3)</Label>
+                        <Input 
+                          type="number" 
+                          value={block.l3} 
+                          onChange={(e) => {
+                            const newBlocks = [...blocks];
+                            newBlocks[idx] = buildBlock(block.id, block.blockNo, block.l1, block.l2, parseInt(e.target.value) || 0, h, block.remarks, undefined, block.type, block.pricePerCbm, block.photoUrl, block.photoUrls);
+                            onBlocksChange(newBlocks);
+                          }}
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-[9px] uppercase font-bold opacity-70">Remark</Label>
+                        <Input 
+                          value={block.remarks || ''} 
+                          onChange={(e) => {
+                            const newBlocks = [...blocks];
+                            newBlocks[idx] = { ...block, remarks: e.target.value };
+                            onBlocksChange(newBlocks);
+                          }}
+                          className="h-8 text-xs italic"
+                          placeholder="Add remark..."
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center pt-1">
+                       <div className="flex gap-2">
+                          {(h.blockTypes || []).map((preset: any) => (
+                            <button
+                              key={preset.id}
+                              onClick={() => {
+                                const newBlocks = [...blocks];
+                                newBlocks[idx] = buildBlock(block.id, block.blockNo, block.l1, block.l2, block.l3, h, block.remarks, undefined, preset.id, undefined, block.photoUrl, block.photoUrls);
+                                onBlocksChange(newBlocks);
+                              }}
+                              className={cn(
+                                "px-2 py-0.5 rounded text-[8px] font-bold uppercase transition-all",
+                                block.type === preset.id 
+                                  ? "bg-primary text-primary-foreground scale-110 shadow-sm" 
+                                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+                              )}
+                            >
+                              T{preset.id}
+                            </button>
+                          ))}
+                       </div>
+                       <div className="text-[10px] font-mono font-bold text-green-600">
+                          {block.netCbm.toFixed(3)} CBM
+                       </div>
+                    </div>
+                 </div>
+               ))}
+             </div>
+          </TabsContent>
+
           <TabsContent value="general" className="mt-0 space-y-4 pb-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -394,20 +511,14 @@ function DocumentEditor({ h, cp, onHeaderChange, onProfileChange }: { h: Inspect
             </div>
 
             <div className="pt-2 border-t mt-4">
-              <h3 className="text-[10px] font-bold uppercase tracking-widest text-primary mb-3">Allowances (Centimeters)</h3>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-bold uppercase">Small</Label>
-                  <Input type="number" value={String(h.allowanceSmall)} onChange={e => updateH('allowanceSmall', parseInt(e.target.value) || 0)} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-bold uppercase">Large</Label>
-                  <Input type="number" value={String(h.allowanceLarge)} onChange={e => updateH('allowanceLarge', parseInt(e.target.value) || 0)} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-bold uppercase">Other</Label>
-                  <Input type="number" value={String(h.allowanceOther)} onChange={e => updateH('allowanceOther', parseInt(e.target.value) || 0)} />
-                </div>
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-primary mb-3">Active Allowances (Presets)</h3>
+              <div className="flex flex-wrap gap-2">
+                {(h.blockTypes || []).map(t => (
+                  <div key={t.id} className="bg-muted p-2 rounded-lg border border-border flex flex-col min-w-[60px]">
+                    <span className="text-[8px] font-black uppercase text-muted-foreground">T{t.id}</span>
+                    <span className="text-xs font-bold">{t.allowance}cm</span>
+                  </div>
+                ))}
               </div>
             </div>
           </TabsContent>
@@ -668,24 +779,22 @@ function InvoiceHeader({ cp, h, title }: InvoiceHeaderProps) {
             </td>
           </tr>
 
-          {/* New row for allowances */}
+          {/* Dynamic Types Row */}
           <tr>
             <td style={cellStyle}>
               <div style={labelStyle}>HS CODE</div>
               <div style={valueStyle}>{h.hsCode}</div>
             </td>
-            <td style={cellStyle}>
-              <div style={labelStyle}>Small Allw.</div>
-              <div style={valueStyle}>{h.allowanceSmall} cm</div>
-            </td>
-            <td style={cellStyle}>
-              <div style={labelStyle}>Large Allw.</div>
-              <div style={valueStyle}>{h.allowanceLarge} cm</div>
-            </td>
-            <td style={cellStyle}>
-              <div style={labelStyle}>Other Allw.</div>
-              <div style={valueStyle}>{h.allowanceOther} cm</div>
-            </td>
+            {h.blockTypes?.slice(0, 3).map((t: any) => (
+              <td key={t.id} style={cellStyle}>
+                <div style={labelStyle}>Type T{t.id} Allw.</div>
+                <div style={valueStyle}>{t.allowance} cm</div>
+              </td>
+            ))}
+            {/* Fill missing columns if less than 3 types */}
+            {Array.from({ length: Math.max(0, 3 - (h.blockTypes?.length || 0)) }).map((_, i) => (
+              <td key={`empty-${i}`} style={cellStyle}></td>
+            ))}
           </tr>
           {/* Row 4 - Consignee and Buyer if other */}
           <tr>
@@ -986,8 +1095,8 @@ function InspectionReportBody({ blocks, h, cp, inspectionPhotos }: { blocks: any
           </thead>
           <tbody>
             {blocks.map((b, idx) => {
-              const allowance = b.allowance !== undefined ? b.allowance : 
-                  ((b.type === 'large' ? h.allowanceLarge : b.type === 'other' ? h.allowanceOther : h.allowanceSmall) || 0);
+              const preset = h.blockTypes?.find((p: any) => p.id === b.type) || h.blockTypes?.[0];
+              const allowance = b.allowance !== undefined ? b.allowance : (preset?.allowance || 0);
 
               return (
                 <tr key={b.id}>

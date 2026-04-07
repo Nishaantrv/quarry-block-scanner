@@ -39,7 +39,7 @@ export default function EditPage() {
   const [editL3, setEditL3] = useState('');
   const [editRemarks, setEditRemarks] = useState('');
   const [editAllowance, setEditAllowance] = useState('');
-  const [editType, setEditType] = useState<'small' | 'large' | 'other'>('small');
+  const [editType, setEditType] = useState<string>('1');
   const [showSettings, setShowSettings] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -63,7 +63,7 @@ export default function EditPage() {
     setEditL3(block.l3.toString());
     setEditRemarks(block.remarks || '');
     setEditAllowance(block.allowance !== undefined ? block.allowance.toString() : '');
-    setEditType(block.type || 'small');
+    setEditType(block.type || '1');
   };
 
   const confirmEdit = () => {
@@ -170,12 +170,12 @@ export default function EditPage() {
                     <Label className="text-[10px] uppercase font-bold text-muted-foreground pl-1">Type</Label>
                     <select
                       value={editType}
-                      onChange={(e) => setEditType(e.target.value as any)}
+                      onChange={(e) => setEditType(e.target.value)}
                       className="w-full h-10 px-2 rounded-md bg-background border border-input font-bold text-[10px] uppercase"
                     >
-                      <option value="small">Small</option>
-                      <option value="large">Large</option>
-                      <option value="other">Other</option>
+                      {inspection.header.blockTypes.map(t => (
+                        <option key={t.id} value={t.id}>T{t.id}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -275,11 +275,10 @@ export default function EditPage() {
                   <div className="font-black text-lg tabular-nums">{block.netCbm.toFixed(3)}</div>
                   <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">NET CBM</div>
                   <div className="text-[10px] font-bold text-primary/60 uppercase tracking-wider">
-                    {block.type || 'small'}: {block.allowance !== undefined ? block.allowance : (
-                      block.type === 'large' ? inspection.header.allowanceLarge :
-                        block.type === 'other' ? inspection.header.allowanceOther :
-                          inspection.header.allowanceSmall
-                    )}
+                    {(() => {
+                        const preset = inspection.header.blockTypes.find(p => p.id === block.type) || inspection.header.blockTypes[0];
+                        return `T${block.type || '1'}: ${block.allowance !== undefined ? block.allowance : preset.allowance}`;
+                    })()}
                   </div>
                 </div>
                 {block.remarks && (
@@ -339,10 +338,6 @@ function HeaderEditor({ header, onSave, onCancel }: { header: InspectionHeader; 
     onSave({
       ...form,
       pricePerCbm: Number(form.pricePerCbm),
-      allowanceSmall: Number(form.allowanceSmall),
-      allowanceLarge: Number(form.allowanceLarge),
-      allowanceOther: Number(form.allowanceOther),
-      allowance: Number(form.allowanceSmall), // sync legacy
       startingBlockNumber: Number(form.startingBlockNumber),
     });
   };
@@ -366,20 +361,6 @@ function HeaderEditor({ header, onSave, onCancel }: { header: InspectionHeader; 
           <div className="space-y-1">
             <Label className="text-xs uppercase font-bold text-muted-foreground">Price</Label>
             <Input type="number" value={String(form.pricePerCbm)} onChange={(e) => set('pricePerCbm', e.target.value)} className="bg-background/50 font-bold" />
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <Label className="text-xs uppercase font-bold text-muted-foreground">Small Allw.</Label>
-            <Input type="number" value={String(form.allowanceSmall)} onChange={(e) => set('allowanceSmall', e.target.value)} className="bg-background/50 font-bold" />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs uppercase font-bold text-muted-foreground">Large Allw.</Label>
-            <Input type="number" value={String(form.allowanceLarge)} onChange={(e) => set('allowanceLarge', e.target.value)} className="bg-background/50 font-bold" />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs uppercase font-bold text-muted-foreground">Other Allw.</Label>
-            <Input type="number" value={String(form.allowanceOther)} onChange={(e) => set('allowanceOther', e.target.value)} className="bg-background/50 font-bold" />
           </div>
         </div>
       </div>
