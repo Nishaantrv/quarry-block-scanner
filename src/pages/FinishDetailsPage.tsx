@@ -59,7 +59,7 @@ export default function FinishDetailsPage() {
         try {
             await finishInspection();
             toast({ title: 'Inspection Complete', description: 'Saved successfully.' });
-            navigate('/export', { state: { defaultDocType: 'normal-report' } });
+            navigate(`/abstract-edit/${inspection.id}`);
         } catch (err: any) {
             console.error('CRITICAL SAVE ERROR:', err);
             

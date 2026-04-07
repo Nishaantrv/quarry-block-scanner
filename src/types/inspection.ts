@@ -53,6 +53,7 @@ export interface InspectionHeader {
   stoneType: string;
   quarryCode: string;
   calculationMode: 'gross' | 'net';
+  abstractDetails?: string;
 };
 
 export interface Block {
@@ -115,6 +116,7 @@ export const DEFAULT_HEADER: InspectionHeader = {
   calculationMode: 'net',
   hsCode: '',
   countryOfOrigin: '',
+  abstractDetails: '',
 };
 
 export const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
