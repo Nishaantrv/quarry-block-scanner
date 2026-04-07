@@ -28,7 +28,7 @@ export default function MarkingPage() {
   const [remarks, setRemarks] = useState('');
   const [manualAllowance, setManualAllowance] = useState('');
   const [blockType, setBlockType] = useState<'small' | 'large' | 'other'>('small');
-  const [showTypeSelection, setShowTypeSelection] = useState(false);
+  const [sessionAllowance, setSessionAllowance] = useState('');
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [rotation, setRotation] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -108,7 +108,7 @@ export default function MarkingPage() {
     const v2 = parseFloat(l2);
     const v3 = parseFloat(l3);
     if (!isNaN(v1) && !isNaN(v2) && !isNaN(v3) && v1 > 0 && v2 > 0 && v3 > 0) {
-      const vAllw = parseFloat(manualAllowance);
+      const vAllw = parseFloat(manualAllowance) || parseFloat(sessionAllowance);
       updateBlock(currentBlock!.id, v1, v2, v3, remarks, !isNaN(vAllw) ? vAllw : undefined, blockType as any, undefined, photoUrls);
     }
   };
@@ -143,7 +143,7 @@ export default function MarkingPage() {
       return;
     }
 
-    const vAllw = parseFloat(manualAllowance);
+    const vAllw = parseFloat(manualAllowance) || parseFloat(sessionAllowance);
     addBlock(v1, v2, v3, remarks, !isNaN(vAllw) ? vAllw : undefined, blockType as any, undefined, photoUrls);
 
     // Feedback calculations
@@ -152,9 +152,10 @@ export default function MarkingPage() {
     if (blockType === 'large') allowance = Number(allowanceLarge);
     else if (blockType === 'other') allowance = Number(allowanceOther);
 
-    const n1 = Math.max(v1 - (parseFloat(manualAllowance) || allowance), 0);
-    const n2 = Math.max(v2 - (parseFloat(manualAllowance) || allowance), 0);
-    const n3 = Math.max(v3 - (parseFloat(manualAllowance) || allowance), 0);
+    const currentAllowanceValue = parseFloat(manualAllowance) || parseFloat(sessionAllowance) || allowance;
+    const n1 = Math.max(v1 - currentAllowanceValue, 0);
+    const n2 = Math.max(v2 - currentAllowanceValue, 0);
+    const n3 = Math.max(v3 - currentAllowanceValue, 0);
     const netCbm = (n1 * n2 * n3) / 1_000_000;
 
     setLastAdded({
@@ -240,7 +241,7 @@ export default function MarkingPage() {
       allowance = Number(inspection.header.allowance) || 15;
     }
 
-    const currentAllowance = parseFloat(manualAllowance) || allowance;
+    const currentAllowance = parseFloat(manualAllowance) || parseFloat(sessionAllowance) || allowance;
     const n1 = Math.max(v1 - currentAllowance, 0);
     const n2 = Math.max(v2 - currentAllowance, 0);
     const n3 = Math.max(v3 - currentAllowance, 0);
@@ -298,37 +299,17 @@ export default function MarkingPage() {
               {isEditing ? `Modifying #${currentIndex + 1}` : `New Block #${blocks.length + 1}`}
             </div>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowTypeSelection(!showTypeSelection)}
-              className={cn("h-8 w-8 rounded-full border border-border shadow-sm transition-transform", showTypeSelection && "rotate-45 bg-primary/10 text-primary")}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-
-          {showTypeSelection && (
-            <div className="flex gap-1.5 bg-card/50 p-1 rounded-xl border border-border animate-in zoom-in-95 fade-in duration-200">
-              {(['small', 'large', 'other'] as const).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => {
-                    setBlockType(t);
-                    setShowTypeSelection(false);
-                  }}
-                  className={cn(
-                    "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all",
-                    blockType === t
-                      ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20 scale-105"
-                      : "text-muted-foreground hover:bg-muted"
-                  )}
-                >
-                  {t}
-                </button>
-              ))}
+            <div className="flex items-center gap-1.5 bg-card/50 px-3 py-1 rounded-full border border-border shadow-sm">
+              <span className="text-[10px] font-black uppercase text-muted-foreground mr-1">Allw:</span>
+              <input 
+                type="number"
+                value={sessionAllowance}
+                onChange={(e) => setSessionAllowance(e.target.value)}
+                placeholder={String(inspection.header.allowanceSmall || 15)}
+                className="w-10 bg-transparent border-none focus:ring-0 text-xs font-bold text-primary p-0 h-auto tabular-nums"
+              />
             </div>
-          )}
+          </div>
 
           {previewNetCbm && (
             <div className="text-xs font-bold text-muted-foreground animate-in fade-in">
@@ -410,26 +391,14 @@ export default function MarkingPage() {
               ref={l3Ref}
               onKeyDown={(e) => handleKeyDown(e, null)}
             />
-            <div className="grid grid-cols-2 gap-3 px-1 pt-1">
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground pl-1">Allowance (cm)</Label>
-                <Input
-                  type="number"
-                  value={manualAllowance}
-                  onChange={(e) => setManualAllowance(e.target.value)}
-                  placeholder="Auto"
-                  className="h-12 text-sm font-semibold bg-card border-2 border-border focus:border-primary rounded-xl tabular-nums"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground pl-1">Remarks</Label>
-                <Input
-                  value={remarks}
-                  onChange={(e) => setRemarks(e.target.value)}
-                  placeholder="Notes..."
-                  className="h-12 text-sm font-semibold bg-card border-2 border-border focus:border-primary rounded-xl"
-                />
-              </div>
+            <div className="space-y-1.5 px-1 pt-1">
+              <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground pl-1">Remarks</Label>
+              <Input
+                value={remarks}
+                onChange={(e) => setRemarks(e.target.value)}
+                placeholder="Optional notes for this block..."
+                className="h-12 text-sm font-semibold bg-card border-2 border-border focus:border-primary rounded-xl"
+              />
             </div>
 
             {/* PHOTOS LIST BELOW REMARKS */}
