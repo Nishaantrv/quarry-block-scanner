@@ -1,0 +1,148 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* INDUSTRIAL GLASS - Light Mode */
+    --background: 142 30% 96%;
+    /* Soft Mint Background */
+    --foreground: 224 71% 4%;
+    /* Deep Slate */
+
+    --card: 0 0% 100%;
+    --card-foreground: 224 71% 4%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 71% 4%;
+
+    --primary: 158 64% 52%;
+    /* Jade Green */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 142 20% 90%;
+    --secondary-foreground: 224 71% 4%;
+
+    --muted: 142 20% 90%;
+    --muted-foreground: 142 8% 46%;
+
+    --accent: 158 64% 52%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 142 13% 85%;
+    --input: 142 13% 85%;
+    --ring: 158 64% 52%;
+
+    --radius: 1rem;
+    /* Rounded for modern mobile app feel */
+  }
+
+  .dark {
+    /* INDUSTRIAL GLASS - Dark Mode (Primary) */
+    --background: 158 40% 4%;
+    /* Deep Forest Black */
+    --foreground: 210 40% 98%;
+
+    --card: 158 47% 11%;
+    /* Dark Jade */
+    --card-foreground: 210 40% 98%;
+
+    --popover: 158 47% 11%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 158 64% 52%;
+    /* Jade Green */
+    --primary-foreground: 158 71% 4%;
+
+    --secondary: 158 19% 20%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 158 19% 20%;
+    --muted-foreground: 158 20% 65%;
+
+    --accent: 158 64% 52%;
+    --accent-foreground: 158 71% 4%;
+
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 158 19% 20%;
+    --input: 158 19% 20%;
+    --ring: 158 64% 52%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Improved Touch Targets for Mobile */
+  input,
+  select,
+  button,
+  textarea {
+    @apply min-h-[44px];
+    /* iOS minimum touch target */
+  }
+
+  input[type="number"],
+  input[type="text"],
+  textarea,
+  select {
+    @apply text-base font-semibold border border-input bg-card/50 rounded-lg px-4 py-2;
+  }
+
+  input:focus,
+  select:focus,
+  textarea:focus {
+    @apply ring-2 ring-primary/50 border-primary outline-none transition-all duration-200;
+  }
+
+  /* Buttons */
+  button {
+    @apply font-semibold tracking-wide rounded-lg transition-all duration-200;
+  }
+}
+
+@layer utilities {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 24px);
+  }
+
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 24px);
+  }
+
+  /* Glassmorphism Utilities */
+  .glass-panel {
+    @apply bg-card/40 backdrop-blur-xl border border-white/10 shadow-lg;
+  }
+
+  .glass-card {
+    @apply bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-md border border-white/5 shadow-md;
+  }
+
+  .text-shadow-sm {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Hide scrollbar but keep functionality */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
