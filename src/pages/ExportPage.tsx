@@ -18,7 +18,7 @@ export default function ExportPage() {
   const updateHeader = useInspectionStore((s) => s.updateHeader);
   const setCompanyProfile = useInspectionStore((s) => s.setCompanyProfile);
 
-  const [activeDoc, setActiveDoc] = React.useState<DocType>('normal-report');
+  const [activeDoc, setActiveDoc] = React.useState<DocType>('block-abstract');
   const printRef = useRef<HTMLDivElement>(null);
 
   // Edit Mode State
@@ -112,10 +112,9 @@ export default function ExportPage() {
   };
 
   const docs: { key: DocType; label: string }[] = [
-    { key: 'normal-report', label: 'Normal Report' },
-    { key: 'block-abstract', label: 'Abstract' },
-    { key: 'gross-packing', label: 'G. Packing' },
-    { key: 'net-packing', label: 'N. Packing' },
+    { key: 'normal-report', label: 'Inspection Report' },
+    { key: 'gross-packing', label: 'G. Packing list' },
+    { key: 'net-packing', label: 'N. Packing list' },
     { key: 'gross-invoice', label: 'G. Invoice' },
     { key: 'net-invoice', label: 'N. Invoice' },
   ];
@@ -202,22 +201,8 @@ export default function ExportPage() {
               />
             )}
 
-            {activeDoc === 'block-abstract' && (
-              <BlockAbstractBody blocks={blocks} h={h} cp={cp} />
-            )}
-
-            {(activeDoc === 'gross-packing' || activeDoc === 'net-packing') && (
-              <PackingListBody
-                blocks={blocks}
-                type={activeDoc === 'gross-packing' ? 'gross' : 'net'}
-                h={h}
-                cp={cp}
-                totals={totals}
-              />
-            )}
-
             {activeDoc === 'normal-report' && (
-              <NormalReportBody
+              <BlockAbstractBody
                 blocks={blocks}
                 h={h}
                 cp={cp}
@@ -757,141 +742,37 @@ function InvoiceBody({ blocks, type, h, cp, totals, blockRange }: { blocks: any[
   );
 }
 
-function NormalReportBody({ blocks, h, cp }: { blocks: any[]; h: any; cp: any }) {
-  const cellStyle = { border: '1px solid #000', padding: '6px', verticalAlign: 'middle', fontSize: '11px', textAlign: 'center' as const };
-  const headerStyle = { ...cellStyle, fontWeight: 'bold' as const, background: '#e5e7eb' };
 
-  return (
-    <div className="space-y-8">
-      <div className="text-center py-4 border-b-2 border-black mb-6">
-        <h2 className="text-2xl font-black uppercase tracking-widest text-[#991b1b]">Normal Report</h2>
-        <p className="text-sm font-bold mt-1">MATERIAL NAME : {h.stoneType || 'ROUGH GRANITE BLOCKS'}</p>
-      </div>
-
-      {blocks.map((b, idx) => {
-        const allowance = (b.type === 'large' ? h.allowanceLarge : b.type === 'other' ? h.allowanceOther : h.allowanceSmall) || 0;
-        const allowanceText = `L=${allowance}CM, W=${allowance}CM, H=${allowance}CM`;
-
-        const sides = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
-        const allPhotos = (b.photoUrls && b.photoUrls.length > 0) ? b.photoUrls : (b.photoUrl ? [b.photoUrl] : []);
-
-        return (
-          <div key={b.id} className="pb-12 border-b-4 border-black last:border-0 pt-6 bg-[#9ca3af]" style={{ pageBreakInside: 'avoid' }}>
-            {/* Photos with individual headers */}
-            <div className="space-y-10 mb-10 px-4">
-              {allPhotos.length > 0 ? (
-                allPhotos.map((url: string, pIdx: number) => (
-                  <div key={pIdx} className="flex flex-col items-center gap-4">
-                    <h3 className="text-2xl font-black uppercase tracking-tight text-[#991b1b] text-center">
-                      BLOCK NO : {b.blockNo}/{sides[pIdx % sides.length]} SIDE
-                    </h3>
-                    <img
-                      src={url}
-                      alt={`Block ${b.blockNo} ${sides[pIdx % sides.length]} side`}
-                      className="max-h-[500px] w-auto border-2 border-black shadow-2xl object-contain bg-white"
-                    />
-                  </div>
-                ))
-              ) : (
-                <div className="h-40 w-full border-2 border-dashed border-zinc-400 flex items-center justify-center text-[#991b1b] italic font-black uppercase text-xl bg-white/50 rounded" style={{ pageBreakInside: 'avoid' }}>
-                  No photos for Block {b.blockNo}
-                </div>
-              )}
-            </div>
-
-            {/* Measurement Table */}
-            <div className="px-4">
-              <div className="bg-white p-2 border-2 border-black shadow-xl">
-                <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid black' }}>
-                  <thead>
-                    <tr>
-                      <th style={headerStyle}>MEASUREMENT TYPE</th>
-                      <th style={headerStyle}>LENGTH</th>
-                      <th style={headerStyle}>WIDTH</th>
-                      <th style={headerStyle}>HEIGHT</th>
-                      <th style={headerStyle}>CBM</th>
-                      <th style={headerStyle}>EXTRA ALLOWANCE</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td style={{ ...cellStyle, fontWeight: 'bold', textAlign: 'left' }}>GROSS</td>
-                      <td style={cellStyle}>{b.l1}</td>
-                      <td style={cellStyle}>{b.l2}</td>
-                      <td style={cellStyle}>{b.l3}</td>
-                      <td style={cellStyle}>{b.grossCbm?.toFixed(3) || ((b.l1 * b.l2 * b.l3) / 1000000).toFixed(3)}</td>
-                      <td style={cellStyle}></td>
-                    </tr>
-                    <tr>
-                      <td style={{ ...cellStyle, fontWeight: 'bold', textAlign: 'left' }}>NET MEASUREMENT</td>
-                      <td style={cellStyle}>{Math.max(b.l1 - allowance, 0)}</td>
-                      <td style={cellStyle}>{Math.max(b.l2 - allowance, 0)}</td>
-                      <td style={cellStyle}>{Math.max(b.l3 - allowance, 0)}</td>
-                      <td style={cellStyle}>{b.netCbm?.toFixed(3) || '0.000'}</td>
-                      <td style={{ ...cellStyle, fontSize: '9px' }}>{allowanceText}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {b.remarks && (
-              <div className="mt-6 px-4">
-                <div style={{ border: '3px solid #991b1b', padding: '16px', backgroundColor: 'white' }}>
-                  <p style={{ color: '#991b1b', fontWeight: 900, textTransform: 'uppercase', fontSize: '12px', marginBottom: '8px' }}>REMARKS</p>
-                  <div style={{ textAlign: 'center', fontStyle: 'italic', fontWeight: 'bold', fontSize: '18px', color: '#991b1b' }}>
-                    *) {b.remarks}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      })}
-
-      <div className="mt-8 pt-8 border-t-4 border-black" style={{ pageBreakInside: 'avoid' }}>
-        <div className="flex justify-between items-end">
-          <div className="space-y-1">
-            <p className="font-bold">Total Blocks: {blocks.length}</p>
-            <p className="font-bold">Total Net Volume: {blocks.reduce((acc, b) => acc + (b.netCbm || 0), 0).toFixed(3)} m³</p>
-          </div>
-          <div className="text-right">
-            <div style={{ color: '#1a365d' }} className="font-black uppercase text-lg border-b-2 border-black pb-1 mb-4">{cp.companyName}</div>
-            <p className="font-bold italic">Authorized Signatory</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function BlockAbstractBody({ blocks, h, cp }: { blocks: any[]; h: any; cp: any }) {
-  const cellStyle = { border: '1px solid #000', padding: '2px 4px', fontSize: '9px', verticalAlign: 'middle', textAlign: 'center' as const };
+  const cellStyle = { border: '1px solid #000', padding: '3px 4px', fontSize: '9px', verticalAlign: 'middle', textAlign: 'center' as const };
   const headerStyle = { ...cellStyle, fontWeight: 'bold' as const, background: '#f8fafc', textTransform: 'uppercase' as const };
   const subHeaderStyle = { ...cellStyle, fontWeight: 'bold' as const, background: '#f1f5f9', fontSize: '8px' };
 
   return (
-    <div className="w-full">
-      <div className="text-center py-4 mb-4">
-        <h2 className="text-lg font-black uppercase tracking-tight text-[#0369a1]">
+    <div className="w-full font-serif">
+      <div className="text-center py-6 mb-4 border-b-2 border-black">
+        <h2 className="text-xl font-black uppercase tracking-tight text-[#0369a1]">
           M/s. {cp.companyName} - ({h.stoneType || 'XOW / XMN'}) BLOCKS ABSTRACT
         </h2>
+        <p className="text-[10px] font-bold mt-1 text-zinc-500 uppercase tracking-widest leading-none">Detailed Inspection Summary Report</p>
       </div>
 
-      <div className="flex gap-0 border-[3px] border-double border-zinc-400 p-1">
-        <table style={{ width: '90%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+      <div className="overflow-x-auto">
+        <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
           <thead>
             <tr>
-              <th style={{ ...headerStyle, width: '3%' }} rowSpan={2}>Sl.No</th>
-              <th style={{ ...headerStyle, width: '10%' }} rowSpan={2}>MARKING DATE</th>
-              <th style={{ ...headerStyle, width: '8%' }} rowSpan={2}>BLOCK NO</th>
-              <th style={{ ...headerStyle, width: '4%' }} rowSpan={2}>SIZE</th>
-              <th style={{ ...headerStyle, width: '18%' }} colSpan={3}>BUYER NET</th>
-              <th style={{ ...headerStyle, width: '6%' }} rowSpan={2}>M3</th>
-              <th style={{ ...headerStyle, width: '18%' }} colSpan={3}>OUR NET</th>
-              <th style={{ ...headerStyle, width: '6%' }} rowSpan={2}>NET CBM</th>
-              <th style={{ ...headerStyle, width: '6%' }} rowSpan={2}>DIFF CBM</th>
-              <th style={{ ...headerStyle, width: '21%' }} rowSpan={2}>REMARK</th>
+              <th style={{ ...headerStyle, width: '30px' }} rowSpan={2}>SL</th>
+              <th style={{ ...headerStyle, width: '70px' }} rowSpan={2}>DATE</th>
+              <th style={{ ...headerStyle, width: '60px' }} rowSpan={2}>BLOCK NO</th>
+              <th style={{ ...headerStyle, width: '30px' }} rowSpan={2}>SZ</th>
+              <th style={{ ...headerStyle }} colSpan={3}>BUYER NET</th>
+              <th style={{ ...headerStyle, width: '50px' }} rowSpan={2}>M3</th>
+              <th style={{ ...headerStyle }} colSpan={3}>OUR NET</th>
+              <th style={{ ...headerStyle, width: '50px' }} rowSpan={2}>NET CBM</th>
+              <th style={{ ...headerStyle, width: '50px' }} rowSpan={2}>DIFF</th>
+              <th style={{ ...headerStyle, width: '140px' }} rowSpan={2}>REMARK</th>
+              <th style={{ ...headerStyle, width: '70px' }} rowSpan={2}>CLAIM</th>
             </tr>
             <tr>
               <th style={subHeaderStyle}>L</th>
@@ -904,7 +785,9 @@ function BlockAbstractBody({ blocks, h, cp }: { blocks: any[]; h: any; cp: any }
           </thead>
           <tbody>
             {blocks.map((b, idx) => {
-              const allowance = (b.type === 'large' ? h.allowanceLarge : b.type === 'other' ? h.allowanceOther : h.allowanceSmall) || 0;
+              const allowance = b.allowance !== undefined ? b.allowance : 
+                  ((b.type === 'large' ? h.allowanceLarge : b.type === 'other' ? h.allowanceOther : h.allowanceSmall) || 0);
+              
               const ourL = b.l1;
               const ourW = b.l2;
               const ourH = b.l3;
@@ -920,34 +803,72 @@ function BlockAbstractBody({ blocks, h, cp }: { blocks: any[]; h: any; cp: any }
               return (
                 <tr key={b.id}>
                   <td style={cellStyle}>{idx + 1}</td>
-                  <td style={cellStyle}>{new Date().toLocaleDateString('en-GB')}</td>
-                  <td style={cellStyle}>{b.blockNo}</td>
+                  <td style={cellStyle}>{new Date(b.createdAt || Date.now()).toLocaleDateString('en-GB')}</td>
+                  <td style={{ ...cellStyle, fontWeight: '900', color: '#1d4ed8' }}>{b.blockNo}</td>
                   <td style={cellStyle}>C</td>
                   <td style={cellStyle}>{buyerL}</td>
                   <td style={{ ...cellStyle, color: '#dc2626', fontWeight: 'bold' }}>{buyerW}</td>
                   <td style={cellStyle}>{buyerH}</td>
-                  <td style={cellStyle}>{buyerM3.toFixed(3)}</td>
+                  <td style={{ ...cellStyle, fontWeight: 'bold' }}>{buyerM3.toFixed(3)}</td>
                   <td style={cellStyle}>{ourL}</td>
                   <td style={{ ...cellStyle, color: '#dc2626', fontWeight: 'bold' }}>{ourW}</td>
                   <td style={cellStyle}>{ourH}</td>
-                  <td style={cellStyle}>{ourNetCbm.toFixed(3)}</td>
-                  <td style={cellStyle}>{diffCbm.toFixed(3)}</td>
-                  <td style={{ ...cellStyle, color: '#dc2626', fontSize: '8px', textAlign: 'left', lineHeight: '1.2' }}>
-                    {b.remarks || `We have given allowance of ${allowance}cm for this block.`}
+                  <td style={{ ...cellStyle, fontWeight: 'bold' }}>{ourNetCbm.toFixed(3)}</td>
+                  <td style={{ ...cellStyle, fontWeight: 'bold', color: '#4b5563' }}>{diffCbm.toFixed(3)}</td>
+                  <td style={{ ...cellStyle, color: '#b91c1c', fontSize: '8px', textAlign: 'left', fontStyle: 'italic', lineHeight: '1.1' }}>
+                    {b.remarks || `Allowance of ${allowance}cm applied effectively for net calculation.`}
+                  </td>
+                  <td style={{ ...cellStyle, padding: '0', fontSize: '7px', fontWeight: 'bold' }}>
+                    <div style={{ background: '#f4f4f5', borderBottom: '1px solid black', padding: '1px' }}>SHORT SIZE</div>
+                    <div style={{ color: '#000' }}>{allowance} CM</div>
                   </td>
                 </tr>
               );
             })}
+            {/* Totals Row */}
+            <tr style={{ background: '#f8fafc', fontWeight: 'bold' }}>
+              <td style={{ ...cellStyle, textAlign: 'right' }} colSpan={7}>TOTALS</td>
+              <td style={cellStyle}>
+                {blocks.reduce((acc, b) => {
+                  const allowance = b.allowance !== undefined ? b.allowance : 
+                    ((b.type === 'large' ? h.allowanceLarge : b.type === 'other' ? h.allowanceOther : h.allowanceSmall) || 0);
+                  return acc + (b.l1 * Math.max(b.l2 - allowance, 0) * b.l3) / 1000000;
+                }, 0).toFixed(3)}
+              </td>
+              <td style={{ ...cellStyle }} colSpan={3}></td>
+              <td style={cellStyle}>{blocks.reduce((acc, b) => acc + (b.grossCbm || (b.l1*b.l2*b.l3)/1000000), 0).toFixed(3)}</td>
+              <td style={cellStyle}>
+                {(blocks.reduce((acc, b) => acc + (b.grossCbm || (b.l1*b.l2*b.l3)/1000000), 0) - 
+                blocks.reduce((acc, b) => {
+                  const allowance = b.allowance !== undefined ? b.allowance : 
+                    ((b.type === 'large' ? h.allowanceLarge : b.type === 'other' ? h.allowanceOther : h.allowanceSmall) || 0);
+                  return acc + (b.l1 * Math.max(b.l2 - allowance, 0) * b.l3) / 1000000;
+                }, 0)).toFixed(3)}
+              </td>
+              <td style={cellStyle} colSpan={2}></td>
+            </tr>
           </tbody>
         </table>
-        
-        <div style={{ width: '10%', borderLeft: '1px solid black' }}>
-           <div style={{ ...headerStyle, border: 'none', borderBottom: '1px solid black', padding: '10px 2px' }}>BUYER CLAIM</div>
-           {blocks.map((b, idx) => (
-             <div key={idx} style={{ ...cellStyle, border: 'none', borderBottom: '1px solid black', height: '24px', fontSize: '7px' }}>
-                SHORT SIZE<br/>H = { (b.type === 'large' ? h.allowanceLarge : b.type === 'other' ? h.allowanceOther : h.allowanceSmall) } CM
-             </div>
-           ))}
+      </div>
+
+      <div className="mt-8 pt-6 border-t-2 border-black flex justify-between items-end px-4">
+        <div className="space-y-1">
+          <p className="text-[9px] font-bold uppercase text-zinc-500">Summary Information</p>
+          <div className="flex gap-4">
+            <div>
+              <span className="text-[8px] font-bold text-zinc-400">TOTAL BLOCKS:</span>
+              <span className="ml-1 font-black text-sm">{blocks.length}</span>
+            </div>
+            <div>
+              <span className="text-[8px] font-bold text-zinc-400">TOTAL NET CBM:</span>
+              <span className="ml-1 font-black text-sm">{blocks.reduce((acc, b) => acc + (b.grossCbm || (b.l1*b.l2*b.l3)/1000000), 0).toFixed(3)}</span>
+            </div>
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="text-[10px] font-black uppercase mb-1">{cp.companyName}</div>
+          <div className="h-12 w-32 border-b border-zinc-400 mb-1 ml-auto"></div>
+          <p className="text-[8px] font-bold uppercase text-zinc-500 tracking-widest">Authorized Inspection Signatory</p>
         </div>
       </div>
     </div>

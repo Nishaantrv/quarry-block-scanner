@@ -92,7 +92,7 @@ export default function FinishDetailsPage() {
         try {
             await finishInspection();
             toast({ title: 'Inspection Complete', description: 'Saved successfully.' });
-            navigate(`/abstract-edit/${inspection.id}`);
+            navigate(`/export`);
         } catch (err: any) {
             console.error('CRITICAL SAVE ERROR:', err);
             
