@@ -4,7 +4,7 @@ import { useInspectionStore } from '@/store/inspectionStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Trash2, X, Check, FileText, Search, Settings2, Download } from 'lucide-react';
+import { ArrowLeft, Trash2, X, Check, FileText, Search, Settings2, Download, Camera, Loader2, Image as ImageIcon } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,8 +29,11 @@ export default function EditPage() {
   const deleteBlock = useInspectionStore((s) => s.deleteBlock);
   const updateHeader = useInspectionStore((s) => s.updateHeader);
   const saveInspection = useInspectionStore((s) => s.saveInspection);
+  const uploadPhoto = useInspectionStore((s) => s.uploadPhoto);
 
   const [editingBlock, setEditingBlock] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [editL1, setEditL1] = useState('');
   const [editL2, setEditL2] = useState('');
   const [editL3, setEditL3] = useState('');
@@ -72,6 +75,25 @@ export default function EditPage() {
     if (isNaN(v1) || isNaN(v2) || isNaN(v3)) return;
     updateBlock(editingBlock, v1, v2, v3, editRemarks, vAllowance, editType);
     setEditingBlock(null);
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>, blockId: string) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const block = inspection.blocks.find(b => b.id === blockId);
+    if (!block) return;
+
+    try {
+      setIsUploading(blockId);
+      const url = await uploadPhoto(file);
+      const newPhotoUrls = [...(block.photoUrls || []), url];
+      updateBlock(block.id, block.l1, block.l2, block.l3, block.remarks, block.allowance, block.type, undefined, newPhotoUrls);
+    } catch (error: any) {
+      console.error('Upload failed', error);
+    } finally {
+      setIsUploading(null);
+    }
   };
 
   return (
@@ -164,6 +186,46 @@ export default function EditPage() {
                     placeholder="Optional remarks..."
                     className="h-10 bg-background/50 text-sm font-semibold mt-1"
                   />
+                </div>
+                <div className="mt-4 flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                  <input
+                    type="file"
+                    className="hidden"
+                    ref={fileInputRef}
+                    onChange={(e) => handlePhotoUpload(e, block.id)}
+                    accept="image/*"
+                    capture="environment"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-16 w-16 shrink-0 rounded-xl border-dashed flex flex-col gap-1 text-[10px] uppercase font-bold"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading === block.id}
+                  >
+                    {isUploading === block.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    ) : (
+                      <>
+                        <Camera className="h-4 w-4" />
+                        Add
+                      </>
+                    )}
+                  </Button>
+                  {(block.photoUrls || []).map((url, idx) => (
+                    <div key={idx} className="relative group shrink-0">
+                      <img src={url} alt="" className="h-16 w-16 object-cover rounded-xl border border-border" />
+                      <button
+                        onClick={() => {
+                          const newUrls = block.photoUrls!.filter((_, i) => i !== idx);
+                          updateBlock(block.id, block.l1, block.l2, block.l3, block.remarks, block.allowance, block.type, undefined, newUrls);
+                        }}
+                        className="absolute -top-1 -right-1 bg-destructive text-white rounded-full p-0.5 shadow-lg"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </GlassContainer>
             ) : (

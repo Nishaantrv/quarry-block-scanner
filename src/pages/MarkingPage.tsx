@@ -26,6 +26,7 @@ export default function MarkingPage() {
   const [l2, setL2] = useState('');
   const [l3, setL3] = useState('');
   const [remarks, setRemarks] = useState('');
+  const [manualAllowance, setManualAllowance] = useState('');
   const [blockType, setBlockType] = useState<'small' | 'large' | 'other'>('small');
   const [showTypeSelection, setShowTypeSelection] = useState(false);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
@@ -82,6 +83,7 @@ export default function MarkingPage() {
     setL3(String(block.l3));
     setRemarks(block.remarks || '');
     setBlockType(block.type || 'small');
+    setManualAllowance(block.allowance !== undefined ? String(block.allowance) : '');
     setPhotoUrls(block.photoUrls || (block.photoUrl ? [block.photoUrl] : []));
     setRotation(0);
     setCurrentIndex(index);
@@ -106,7 +108,8 @@ export default function MarkingPage() {
     const v2 = parseFloat(l2);
     const v3 = parseFloat(l3);
     if (!isNaN(v1) && !isNaN(v2) && !isNaN(v3) && v1 > 0 && v2 > 0 && v3 > 0) {
-      updateBlock(currentBlock!.id, v1, v2, v3, remarks, undefined, blockType as any, undefined, photoUrls);
+      const vAllw = parseFloat(manualAllowance);
+      updateBlock(currentBlock!.id, v1, v2, v3, remarks, !isNaN(vAllw) ? vAllw : undefined, blockType as any, undefined, photoUrls);
     }
   };
 
@@ -115,6 +118,7 @@ export default function MarkingPage() {
     setL2('');
     setL3('');
     setRemarks('');
+    setManualAllowance('');
     setBlockType('small');
     setPhotoUrls([]);
     setRotation(0);
@@ -139,7 +143,8 @@ export default function MarkingPage() {
       return;
     }
 
-    addBlock(v1, v2, v3, remarks, undefined, blockType as any, undefined, photoUrls);
+    const vAllw = parseFloat(manualAllowance);
+    addBlock(v1, v2, v3, remarks, !isNaN(vAllw) ? vAllw : undefined, blockType as any, undefined, photoUrls);
 
     // Feedback calculations
     const { allowanceSmall, allowanceLarge, allowanceOther, allowance: legacyAllowance } = inspection.header;
@@ -147,9 +152,9 @@ export default function MarkingPage() {
     if (blockType === 'large') allowance = Number(allowanceLarge);
     else if (blockType === 'other') allowance = Number(allowanceOther);
 
-    const n1 = Math.max(v1 - allowance, 0);
-    const n2 = Math.max(v2 - allowance, 0);
-    const n3 = Math.max(v3 - allowance, 0);
+    const n1 = Math.max(v1 - (parseFloat(manualAllowance) || allowance), 0);
+    const n2 = Math.max(v2 - (parseFloat(manualAllowance) || allowance), 0);
+    const n3 = Math.max(v3 - (parseFloat(manualAllowance) || allowance), 0);
     const netCbm = (n1 * n2 * n3) / 1_000_000;
 
     setLastAdded({
@@ -165,6 +170,7 @@ export default function MarkingPage() {
     setL2('');
     setL3('');
     setRemarks('');
+    setManualAllowance('');
     setPhotoUrls([]);
     setRotation(0);
     l1Ref.current?.focus();
@@ -234,9 +240,10 @@ export default function MarkingPage() {
       allowance = Number(inspection.header.allowance) || 15;
     }
 
-    const n1 = Math.max(v1 - allowance, 0);
-    const n2 = Math.max(v2 - allowance, 0);
-    const n3 = Math.max(v3 - allowance, 0);
+    const currentAllowance = parseFloat(manualAllowance) || allowance;
+    const n1 = Math.max(v1 - currentAllowance, 0);
+    const n2 = Math.max(v2 - currentAllowance, 0);
+    const n3 = Math.max(v3 - currentAllowance, 0);
     return ((n1 * n2 * n3) / 1_000_000).toFixed(3);
   })();
 
@@ -403,14 +410,26 @@ export default function MarkingPage() {
               ref={l3Ref}
               onKeyDown={(e) => handleKeyDown(e, null)}
             />
-            <div className="space-y-1.5 px-1 pt-1">
-              <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground pl-1">Remarks</Label>
-              <Input
-                value={remarks}
-                onChange={(e) => setRemarks(e.target.value)}
-                placeholder="Optional notes for this block..."
-                className="h-12 text-sm font-semibold bg-card border-2 border-border focus:border-primary rounded-xl"
-              />
+            <div className="grid grid-cols-2 gap-3 px-1 pt-1">
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground pl-1">Allowance (cm)</Label>
+                <Input
+                  type="number"
+                  value={manualAllowance}
+                  onChange={(e) => setManualAllowance(e.target.value)}
+                  placeholder="Auto"
+                  className="h-12 text-sm font-semibold bg-card border-2 border-border focus:border-primary rounded-xl tabular-nums"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground pl-1">Remarks</Label>
+                <Input
+                  value={remarks}
+                  onChange={(e) => setRemarks(e.target.value)}
+                  placeholder="Notes..."
+                  className="h-12 text-sm font-semibold bg-card border-2 border-border focus:border-primary rounded-xl"
+                />
+              </div>
             </div>
 
             {/* PHOTOS LIST BELOW REMARKS */}
