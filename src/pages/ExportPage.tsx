@@ -9,7 +9,7 @@ import { ArrowLeft, FileDown, Printer, Edit2, Save, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { InspectionHeader, CompanyProfile } from '@/types/inspection';
 
-type DocType = 'gross-packing' | 'net-packing' | 'gross-invoice' | 'net-invoice' | 'normal-report' | 'block-abstract';
+type DocType = 'gross-packing' | 'net-packing' | 'gross-invoice' | 'net-invoice' | 'normal-report';
 
 export default function ExportPage() {
   const navigate = useNavigate();
@@ -202,7 +202,7 @@ export default function ExportPage() {
             )}
 
             {activeDoc === 'normal-report' && (
-              <BlockAbstractBody
+              <InspectionReportBody
                 blocks={blocks}
                 h={h}
                 cp={cp}
@@ -754,7 +754,7 @@ function InvoiceBody({ blocks, type, h, cp, totals, blockRange }: { blocks: any[
 
 
 
-function BlockAbstractBody({ blocks, h, cp }: { blocks: any[]; h: any; cp: any }) {
+function InspectionReportBody({ blocks, h, cp }: { blocks: any[]; h: any; cp: any }) {
   const cellStyle = { border: '1px solid #000', padding: '3px 4px', fontSize: '9px', verticalAlign: 'middle', textAlign: 'center' as const };
   const headerStyle = { ...cellStyle, fontWeight: 'bold' as const, background: '#f8fafc', textTransform: 'uppercase' as const };
   const subHeaderStyle = { ...cellStyle, fontWeight: 'bold' as const, background: '#f1f5f9', fontSize: '8px' };
@@ -763,9 +763,9 @@ function BlockAbstractBody({ blocks, h, cp }: { blocks: any[]; h: any; cp: any }
     <div className="w-full font-serif">
       <div className="text-center py-6 mb-4 border-b-2 border-black">
         <h2 className="text-xl font-black uppercase tracking-tight text-[#0369a1]">
-          M/s. {cp.companyName} - ({h.stoneType || 'XOW / XMN'}) BLOCKS ABSTRACT
+          M/s. {cp.companyName} - {h.stoneType || 'XOW / XMN'}
         </h2>
-        <p className="text-[10px] font-bold mt-1 text-zinc-500 uppercase tracking-widest leading-none">Detailed Inspection Summary Report</p>
+        <h3 className="text-2xl font-black uppercase tracking-widest mt-1">INSPECTION REPORT</h3>
       </div>
 
       <div className="overflow-x-auto">
@@ -863,7 +863,7 @@ function BlockAbstractBody({ blocks, h, cp }: { blocks: any[]; h: any; cp: any }
 
       <div className="mt-8 pt-6 border-t-2 border-black flex justify-between items-end px-4">
         <div className="space-y-1">
-          <p className="text-[9px] font-bold uppercase text-zinc-500">Summary Information</p>
+          <p className="text-[9px] font-bold uppercase text-zinc-500">Report Information</p>
           <div className="flex gap-4">
             <div>
               <span className="text-[8px] font-bold text-zinc-400">TOTAL BLOCKS:</span>
