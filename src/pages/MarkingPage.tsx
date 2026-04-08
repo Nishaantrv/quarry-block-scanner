@@ -303,19 +303,22 @@ export default function MarkingPage() {
             {(inspection.header.blockTypes || []).map((p) => (
               <button
                 key={p.id}
-                onClick={() => setActiveType(p.id)}
-                onDoubleClick={() => {
-                    setActiveType(p.id);
+                onClick={() => {
+                  if (activeType === p.id) {
                     setShowEditTypeModal(true);
+                  } else {
+                    setActiveType(p.id);
+                  }
                 }}
                 className={cn(
-                  "h-8 px-3 rounded-full text-[10px] font-black transition-all shrink-0 uppercase leading-none flex items-center justify-center",
+                  "h-8 px-3 rounded-full text-[10px] font-black transition-all shrink-0 uppercase leading-none flex items-center justify-center gap-1",
                   activeType === p.id 
                     ? "bg-primary text-primary-foreground shadow-sm scale-105" 
                     : "text-muted-foreground hover:bg-muted"
                 )}
               >
                 T{p.id}
+                {activeType === p.id && <Edit3 className="w-2.5 h-2.5" />}
               </button>
             ))}
           </div>
@@ -350,10 +353,6 @@ export default function MarkingPage() {
               {isEditing ? `Modifying #${currentIndex + 1}` : `New Block #${blocks.length + 1}`}
             </div>
 
-            <div className="flex items-center gap-1.5 bg-card/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-border shadow-md">
-              <span className="text-[9px] font-black uppercase text-muted-foreground mr-1">Status:</span>
-              <span className="text-xs font-black text-primary px-1">ACTIVE</span>
-            </div>
           </div>
 
           {previewNetCbm && (
@@ -844,7 +843,6 @@ function EditTypeModal({ header, activeType, onClose, onConfirm }: EditTypeModal
   const [allowance, setAllowance] = useState(String(preset.allowance));
   const [price, setPrice] = useState(String(preset.pricePerCbm));
 
-  const isT1 = activeType === '1';
 
   return (
     <>
@@ -868,17 +866,8 @@ function EditTypeModal({ header, activeType, onClose, onConfirm }: EditTypeModal
               type="number"
               value={allowance}
               onChange={(e) => setAllowance(e.target.value)}
-              disabled={isT1}
-              className={cn(
-                "h-14 text-2xl font-black tabular-nums bg-card border-2 border-primary/20 focus:border-primary",
-                isT1 && "opacity-60 grayscale cursor-not-allowed"
-              )}
+              className="h-14 text-2xl font-black tabular-nums bg-card border-2 border-primary/20 focus:border-primary"
             />
-            {isT1 && (
-              <p className="text-[10px] text-amber-500 font-bold uppercase mt-1 pl-1">
-                T1 Allowance is static and cannot be changed
-              </p>
-            )}
           </div>
 
           <div className="space-y-1.5">

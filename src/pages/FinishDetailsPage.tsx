@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { GlassContainer } from '@/components/ui/glass-container';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, FileDown, Ship, Wallet, Box, Package, Camera, X, Images, RotateCw } from 'lucide-react';
+import { ArrowLeft, FileDown, Ship, Wallet, Box, Package } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 export default function FinishDetailsPage() {
@@ -16,13 +16,6 @@ export default function FinishDetailsPage() {
     const inspection = useInspectionStore((s) => s.activeInspection);
     const updateHeader = useInspectionStore((s) => s.updateHeader);
     const finishInspection = useInspectionStore((s) => s.finishInspection);
-    const uploadPhoto = useInspectionStore((s) => s.uploadPhoto);
-    const updateInspectionPhotos = useInspectionStore((s) => s.updateInspectionPhotos);
-    const [isUploading, setIsUploading] = React.useState(false);
-    const fileInputRef = React.useRef<HTMLInputElement>(null);
-    const cameraInputRef = React.useRef<HTMLInputElement>(null);
-
-    const inspectionPhotos = inspection?.header.inspectionPhotos || [];
 
     const { register, handleSubmit, watch } = useForm<InspectionHeader>({
         defaultValues: inspection?.header ?? {},
@@ -117,34 +110,6 @@ export default function FinishDetailsPage() {
         // ... existing onSubmit logic ...
     };
 
-    const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = e.target.files;
-        if (!files || files.length === 0) return;
-
-        try {
-            setIsUploading(true);
-            const uploadPromises = Array.from(files).map(file => uploadPhoto(file));
-            const urls = await Promise.all(uploadPromises);
-            updateInspectionPhotos([...inspectionPhotos, ...urls]);
-            toast({ title: 'Photos Uploaded', description: `${urls.length} photos have been saved.` });
-        } catch (error: any) {
-            toast({ title: 'Upload Failed', description: error.message, variant: 'destructive' });
-        } finally {
-            setIsUploading(false);
-        }
-    };
-
-    const removePhoto = (index: number) => {
-        const newPhotos = inspectionPhotos.filter((_, i) => i !== index);
-        updateInspectionPhotos(newPhotos);
-    };
-
-    const handleRotatePhoto = (url: string) => {
-        const currentRotations = inspection?.header.photoRotations || {};
-        const currentRot = currentRotations[url] || 0;
-        const newRot = (currentRot + 90) % 360;
-        useInspectionStore.getState().updateHeaderPhotoRotation(url, newRot);
-    };
 
     return (
         <div className="min-h-screen pb-32 pt-6 px-4 max-w-md mx-auto">
@@ -167,20 +132,20 @@ export default function FinishDetailsPage() {
             {/* Summary pill */}
             <GlassContainer className="mb-6 p-4 grid grid-cols-2 sm:flex sm:items-center sm:justify-between gap-y-4 gap-x-2 bg-primary/5 border-primary/20">
                 <div className="text-center sm:text-left">
-                    <div className="text-[9px] sm:text-[10px] uppercase font-bold text-muted-foreground">Blocks</div>
+                    <div className="text-[9px] sm:text-[10px] uppercase font-bold text-muted-foreground whitespace-nowrap">No of blocks</div>
                     <div className="text-xl sm:text-2xl font-black text-primary">{totals.totalBlocks}</div>
                 </div>
                 <div className="text-center sm:text-left">
-                    <div className="text-[9px] sm:text-[10px] uppercase font-bold text-muted-foreground">Net CBM</div>
+                    <div className="text-[9px] sm:text-[10px] uppercase font-bold text-muted-foreground whitespace-nowrap">Net measurement (cbm)</div>
                     <div className="text-xl sm:text-2xl font-black text-primary">{totals.totalNetCbm.toFixed(3)}</div>
                 </div>
                 <div className="text-center sm:text-left">
-                    <div className="text-[9px] sm:text-[10px] uppercase font-bold text-muted-foreground">Gross CBM</div>
+                    <div className="text-[9px] sm:text-[10px] uppercase font-bold text-muted-foreground whitespace-nowrap">Gross measurement (cbm)</div>
                     <div className="text-xl sm:text-2xl font-black text-primary">{totals.totalGrossCbm.toFixed(3)}</div>
                 </div>
                 <div className="text-center sm:text-left">
-                    <div className="text-[9px] sm:text-[10px] uppercase font-bold text-muted-foreground">Value</div>
-                    <div className="text-xl sm:text-2xl font-black text-primary truncate italic">{totals.totalValue.toLocaleString()}</div>
+                    <div className="text-[9px] sm:text-[10px] uppercase font-bold text-muted-foreground whitespace-nowrap">Value ($)</div>
+                    <div className="text-xl sm:text-2xl font-black text-primary truncate">{totals.totalValue.toLocaleString()}</div>
                 </div>
             </GlassContainer>
 
@@ -250,90 +215,6 @@ export default function FinishDetailsPage() {
                     </GlassContainer>
                 </section>
 
-                {/* INSPECTION EVIDENCE SECTION */}
-                <section className="space-y-3">
-                    <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2 px-1">
-                        <Camera className="w-4 h-4" /> Inspection Evidence / Photos
-                    </h2>
-                    <GlassContainer className="p-4">
-                        <div className="grid grid-cols-4 sm:grid-cols-5 gap-3 mb-4">
-                            {inspectionPhotos.map((url, idx) => (
-                                <div key={idx} className="relative aspect-square group overflow-hidden rounded-xl border border-border bg-muted">
-                                    <img 
-                                        src={url} 
-                                        alt={`Evidence ${idx + 1}`} 
-                                        className="h-full w-full object-cover transition-all" 
-                                        style={{ transform: `rotate(${inspection.header.photoRotations?.[url] || 0}deg)` }}
-                                    />
-                                    <div className="absolute top-1 right-1 flex gap-1 z-20">
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRotatePhoto(url)}
-                                            className="bg-primary/90 text-primary-foreground rounded-full p-1.5 shadow-lg hover:scale-110 transition-transform"
-                                        >
-                                            <RotateCw className="h-2.5 w-2.5" />
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => removePhoto(idx)}
-                                            className="bg-destructive/90 text-destructive-foreground rounded-full p-1.5 shadow-lg hover:scale-110 transition-transform"
-                                        >
-                                            <X className="h-2.5 w-2.5" />
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                            
-                            <input
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                className="hidden"
-                                ref={fileInputRef}
-                                onChange={handlePhotoUpload}
-                            />
-                            <input
-                                type="file"
-                                accept="image/*"
-                                capture="environment"
-                                className="hidden"
-                                ref={cameraInputRef}
-                                onChange={handlePhotoUpload}
-                            />
-                            
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="aspect-square h-full w-full rounded-xl border-2 border-dashed flex flex-col gap-1 items-center justify-center text-[9px] font-bold uppercase text-muted-foreground hover:bg-primary/5 hover:border-primary/30 transition-all"
-                                onClick={() => cameraInputRef.current?.click()}
-                                disabled={isUploading}
-                            >
-                                {isUploading ? (
-                                    <div className="h-4 w-4 border-2 border-primary/30 border-t-primary animate-spin rounded-full" />
-                                ) : (
-                                    <>
-                                        <Camera className="h-4 w-4" />
-                                        <span>Camera</span>
-                                    </>
-                                )}
-                            </Button>
-
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="aspect-square h-full w-full rounded-xl border-2 border-dashed flex flex-col gap-1 items-center justify-center text-[9px] font-bold uppercase text-muted-foreground hover:bg-primary/5 hover:border-primary/30 transition-all"
-                                onClick={() => fileInputRef.current?.click()}
-                                disabled={isUploading}
-                            >
-                                <Images className="h-4 w-4" />
-                                <span>Library</span>
-                            </Button>
-                        </div>
-                        <p className="text-[10px] text-muted-foreground italic pl-1">
-                            Take photos of the quarry site, pile, loading process, or add from gallery.
-                        </p>
-                    </GlassContainer>
-                </section>
 
                 {/* SUBMIT */}
                 <Button

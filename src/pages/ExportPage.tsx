@@ -36,7 +36,7 @@ import {
 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 
-type DocType = 'gross-packing' | 'net-packing' | 'gross-invoice' | 'net-invoice' | 'normal-report';
+type DocType = 'gross-packing' | 'net-packing' | 'gross-invoice' | 'net-invoice' | 'inspection-report';
 
 export default function ExportPage() {
   const navigate = useNavigate();
@@ -47,7 +47,7 @@ export default function ExportPage() {
   const updateBlocks = useInspectionStore((s) => s.updateBlocks);
   const { toast } = useToast();
 
-  const [activeDoc, setActiveDoc] = React.useState<DocType>('normal-report');
+  const [activeDoc, setActiveDoc] = React.useState<DocType>('inspection-report');
   const printRef = useRef<HTMLDivElement>(null);
   const printHiddenRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
@@ -170,7 +170,7 @@ export default function ExportPage() {
   };
 
   const docs: { key: DocType; label: string }[] = [
-    { key: 'normal-report', label: 'Normal Report' },
+    { key: 'inspection-report', label: 'Inspection Report' },
     { key: 'gross-packing', label: 'G. Packing list' },
     { key: 'net-packing', label: 'N. Packing list' },
     { key: 'gross-invoice', label: 'G. Invoice' },
@@ -367,7 +367,7 @@ export default function ExportPage() {
 function PreviewContent({ activeDoc, cp, h, blocks, totals, blockRange, isEditing, inspectionPhotos }: any) {
   return (
     <>
-      {activeDoc !== 'normal-report' && (
+      {activeDoc !== 'inspection-report' && (
         <InvoiceHeader
           cp={cp}
           h={h}
@@ -380,7 +380,7 @@ function PreviewContent({ activeDoc, cp, h, blocks, totals, blockRange, isEditin
         />
       )}
 
-      {activeDoc === 'normal-report' && (
+      {activeDoc === 'inspection-report' && (
         <NormalReportBody
           blocks={blocks}
           h={h}
@@ -1141,8 +1141,23 @@ function InvoiceBody({ blocks, type, h, cp, totals, blockRange }: { blocks: any[
 }
 
 function NormalReportBody({ blocks, cp, h, inspectionPhotos }: any) {
-  const cellStyle = { border: '1px solid #000', padding: '4px', verticalAlign: 'middle', textAlign: 'center' as const, fontSize: '10px' };
-  const headerStyle = { ...cellStyle, fontWeight: 'bold' as const, background: '#f8fafc', textTransform: 'uppercase' as const };
+  const cellStyle = { 
+    border: '1.5pt solid #333', 
+    padding: '10px 8px', 
+    verticalAlign: 'middle', 
+    textAlign: 'center' as const, 
+    fontSize: '11pt',
+    color: '#000'
+  };
+  const headerStyle = { 
+    ...cellStyle, 
+    fontWeight: '900' as const, 
+    background: '#f0f9ff', 
+    textTransform: 'uppercase' as const,
+    fontSize: '9pt',
+    letterSpacing: '0.1em',
+    color: '#0369a1'
+  };
 
   return (
     <div className="w-full space-y-8">
@@ -1152,19 +1167,17 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos }: any) {
         const allowanceText = allowance > 0 ? `${allowance} cm applied effectively` : 'No allowance applied';
 
         return (
-          <div key={b.id} className="border-[3px] border-black p-4 bg-white break-inside-avoid mb-8 page-break-after-always">
-            {/* Header */}
-            <div className="flex justify-between items-center border-b-2 border-black pb-4 mb-6">
-               <div className="text-left">
-                  <h2 className="text-2xl font-black text-[#1a365d] leading-none mb-1 uppercase italic tracking-tighter">{cp.companyName}</h2>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-[#0369a1]">Inspection Report</p>
-               </div>
-               <div className="text-right">
-                  <div className="bg-black text-white px-5 py-2 text-2xl font-black uppercase tracking-tighter rounded-sm shadow-lg">
-                    BLOCK #{String(b.blockNo).padStart(3, '0')}
-                  </div>
-               </div>
-            </div>
+          <div key={b.id} className="border-[4pt] border-black p-4 bg-white break-inside-avoid mb-8 page-break-after-always">
+            {/* Professional Header - Centered Stack (Only on first page) */}
+            {idx === 0 && (
+              <div className="flex flex-col items-center border-b-[3pt] border-black pb-8 mb-10 text-center">
+                 <h2 className="text-[24pt] font-[1000] uppercase tracking-[0.15em] text-[#1a365d] mb-4">DAKSHIN EXPORTS</h2>
+                 <h3 className="text-[10pt] font-black uppercase tracking-[0.3em] text-zinc-400 mb-6">{cp.companyName}</h3>
+                 <h1 className="text-3xl font-[1000] text-black leading-none uppercase tracking-tighter">
+                    Inspection Report
+                 </h1>
+              </div>
+            )}
 
             {/* Measurement Table */}
             <div className="px-4 mb-8">
@@ -1172,31 +1185,36 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos }: any) {
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
+                      <th colSpan={6} style={{ ...cellStyle, padding: '15px', fontSize: '20pt', fontWeight: '500', background: '#fff', borderBottom: '3pt solid #000' }}>
+                        BLOCK NO : {String(b.blockNo).padStart(3, '0')}
+                      </th>
+                    </tr>
+                    <tr>
                       <th style={{ ...headerStyle, width: '25%', textAlign: 'left' }}>MEASUREMENT TYPE</th>
                       <th style={headerStyle}>LENGTH</th>
                       <th style={headerStyle}>HEIGHT</th>
                       <th style={headerStyle}>WIDTH</th>
                       <th style={{ ...headerStyle, background: '#fff1f2', color: '#be123c' }}>ALLOWANCE</th>
-                      <th style={{ ...headerStyle, background: '#e0f2fe', color: '#0369a1' }}>CBM</th>
+                      <th style={{ ...headerStyle, background: '#1a365d', color: '#fff' }}>NET CBM</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
-                      <td style={{ ...cellStyle, fontWeight: 'bold', textAlign: 'left' }}>GROSS ENTRY</td>
+                      <td style={{ ...cellStyle, fontWeight: 'bold', textAlign: 'left', background: '#fafafa' }}>GROSS ENTRY</td>
                       <td style={cellStyle}>{b.l1}</td>
                       <td style={cellStyle}>{b.l2}</td>
                       <td style={cellStyle}>{b.l3}</td>
-                      <td rowSpan={2} style={{ ...cellStyle, fontWeight: 'bold', color: '#be123c' }}>{allowance} CM</td>
-                      <td style={cellStyle}>{( (b.l1 * b.l2 * b.l3) / 1000000 ).toFixed(3)}</td>
+                      <td rowSpan={2} style={{ ...cellStyle, fontWeight: '900', color: '#be123c', background: '#fffafa', fontSize: '14pt' }}>{allowance} CM</td>
+                      <td style={{ ...cellStyle, background: '#fafafa' }}>{( (b.l1 * b.l2 * b.l3) / 1000000 ).toFixed(3)}</td>
                     </tr>
-                    <tr style={{ background: '#fffcf0' }}>
-                      <td style={{ ...cellStyle, fontWeight: 'bold', textAlign: 'left' }}>
-                        FINAL NET (Deducted)
+                    <tr style={{ background: '#f0fdf4' }}>
+                      <td style={{ ...cellStyle, fontWeight: '900', textAlign: 'left', color: '#166534' }}>
+                        FINAL NET (Billable)
                       </td>
-                      <td style={cellStyle}>{b.l1}</td>
-                      <td style={{ ...cellStyle, color: '#dc2626', fontWeight: 'bold' }}>{Math.max(b.l2 - allowance, 0)}</td>
-                      <td style={cellStyle}>{b.l3}</td>
-                      <td style={{ ...cellStyle, fontWeight: '900', color: '#16a34a', fontSize: '14px', background: '#f0fdf4' }}>{Number(b.netCbm || 0).toFixed(3)}</td>
+                      <td style={{ ...cellStyle, color: '#166534', fontWeight: '900' }}>{Math.max(b.l1 - allowance, 0)}</td>
+                      <td style={{ ...cellStyle, color: '#166534', fontWeight: '900' }}>{Math.max(b.l2 - allowance, 0)}</td>
+                      <td style={{ ...cellStyle, color: '#166534', fontWeight: '900' }}>{Math.max(b.l3 - allowance, 0)}</td>
+                      <td style={{ ...cellStyle, color: '#166534', fontWeight: '900', fontSize: '16pt' }}>{Number(b.netCbm || 0).toFixed(3)}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -1212,17 +1230,20 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos }: any) {
                        <div className="text-sm font-black uppercase text-red-600 tracking-widest border-b border-red-200 pb-1 inline-block min-w-[300px]">
                          BLOCK NO : {b.blockNo}/{String.fromCharCode(65 + pIdx)} SIDE
                        </div>
-                       <div className="border-4 border-black p-2 bg-zinc-50 shadow-xl mx-auto block max-w-full">
-                          <img 
-                            src={url} 
-                            alt={`Block ${b.blockNo} - Side ${String.fromCharCode(65 + pIdx)}`} 
-                            className="w-full h-auto object-contain block mx-auto transition-all" 
-                            style={{ 
-                              maxHeight: '600px', 
-                              transform: `rotate(${b.photoRotations?.[url] || 0}deg)` 
-                            }} 
-                          />
-                       </div>
+                         <div 
+                           className="border-[3pt] border-black shadow-2xl mx-auto inline-block bg-white"
+                           style={{ padding: '2mm' }}
+                         >
+                            <img 
+                              src={url} 
+                              alt={`Block ${b.blockNo} - Side ${String.fromCharCode(65 + pIdx)}`} 
+                              className="block h-auto w-auto max-w-full transition-all" 
+                              style={{ 
+                                maxHeight: '800px', 
+                                transform: `rotate(${b.photoRotations?.[url] || 0}deg)` 
+                              }} 
+                            />
+                         </div>
                     </div>
                   ))}
                 </>
@@ -1248,29 +1269,6 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos }: any) {
         );
       })}
 
-      {/* General Inspection Photos Appendix for Normal Report */}
-      {inspectionPhotos && inspectionPhotos.length > 0 && (
-        <div className="mt-12 pt-8 border-t-2 border-black page-break-before mb-8 font-serif">
-          <h3 className="text-xl font-black uppercase tracking-widest text-center mb-8 underline">SITE EVIDENCE APPENDIX</h3>
-          <div className="grid grid-cols-2 gap-6 px-4">
-            {inspectionPhotos.map((url: string, idx: number) => (
-              <div key={`gen-${idx}`} className="flex flex-col gap-2">
-                <div className="border-2 border-black p-1 bg-white overflow-hidden">
-                  <img 
-                    src={url} 
-                    alt={`Site Evidence ${idx + 1}`} 
-                    className="w-full h-64 object-contain transition-all duration-300" 
-                    style={{ transform: `rotate(${h.photoRotations?.[url] || 0}deg)` }}
-                  />
-                </div>
-                <div className="text-[10px] font-bold uppercase text-center bg-zinc-100 p-1 border border-black border-top-0">
-                  GENERAL SITE PHOTO #{idx + 1}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       <div className="mt-12 pt-8 border-t-[3px] border-black" style={{ pageBreakInside: 'avoid' }}>
         <div className="flex justify-between items-end px-4 font-serif">
