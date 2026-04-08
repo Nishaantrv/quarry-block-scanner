@@ -1168,7 +1168,7 @@ function AbstractReportBody({ blocks, h, cp, inspectionPhotos }: { blocks: any[]
               <th style={{ ...headerStyle, width: '50px' }}>WIDTH</th>
               <th style={{ ...headerStyle, width: '60px' }}>TYPE</th>
               <th style={{ ...headerStyle, width: '50px' }}>ALLOW.</th>
-              <th style={{ ...headerStyle, width: '70px' }}>NET VOLUME</th>
+              <th style={{ ...headerStyle, width: '70px' }}>CBM</th>
               <th style={{ ...headerStyle }}>REMARK</th>
             </tr>
           </thead>
@@ -1249,7 +1249,7 @@ function AbstractReportBody({ blocks, h, cp, inspectionPhotos }: { blocks: any[]
               <span className="ml-1 font-black text-sm">{blocks.length}</span>
             </div>
             <div>
-              <span className="text-[8px] font-bold text-zinc-400">TOTAL NET CBM:</span>
+              <span className="text-[8px] font-bold text-zinc-400">TOTAL CBM:</span>
               <span className="ml-1 font-black text-sm">{blocks.reduce((acc, b) => acc + (b.grossCbm || (b.l1*b.l2*b.l3)/1000000), 0).toFixed(3)}</span>
             </div>
           </div>
@@ -1319,7 +1319,7 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos }: any) {
                       <th style={headerStyle}>HEIGHT</th>
                       <th style={headerStyle}>WIDTH</th>
                       <th style={{ ...headerStyle, background: '#fff1f2', color: '#be123c' }}>ALLOWANCE</th>
-                      <th style={{ ...headerStyle, background: '#e0f2fe', color: '#0369a1' }}>NET CBM</th>
+                      <th style={{ ...headerStyle, background: '#e0f2fe', color: '#0369a1' }}>CBM</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1388,7 +1388,7 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos }: any) {
                    <p className="text-2xl font-black">{blocks.length}</p>
                 </div>
                 <div className="text-center bg-zinc-100 border border-black p-2 min-w-[150px]">
-                   <p className="text-[8px] font-bold uppercase text-zinc-500">Total Net Volume</p>
+                   <p className="text-[8px] font-bold uppercase text-zinc-500">Total CBM</p>
                    <p className="text-2xl font-black text-green-700">{blocks.reduce((acc: any, b: any) => acc + (b.netCbm || 0), 0).toFixed(3)} m³</p>
                 </div>
              </div>
