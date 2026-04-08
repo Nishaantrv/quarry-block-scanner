@@ -1281,7 +1281,7 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos }: any) {
             <div className="flex justify-between items-center border-b-2 border-black pb-4 mb-6">
                <div className="text-left">
                   <h2 className="text-2xl font-black text-[#1a365d] leading-none mb-1 uppercase italic tracking-tighter">{cp.companyName}</h2>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-[#0369a1]">Inspection Detail Report</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-[#0369a1]">Inspection Report</p>
                </div>
                <div className="text-right">
                   <div className="bg-black text-white px-5 py-2 text-2xl font-black uppercase tracking-tighter rounded-sm shadow-lg">
