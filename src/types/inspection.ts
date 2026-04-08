@@ -57,6 +57,7 @@ export interface BlockTypePreset {
 export interface InspectionHeader {
   // Customer
   consignee: string;
+  consigneeShort?: string;
   consigneeAddress: string;
   consigneePhone?: string;
   buyer?: string;
@@ -83,6 +84,7 @@ export interface InspectionHeader {
   // Stone description
   marksAndNos: string;
   stoneType: string;
+  stoneDescription?: string;
   quarryCode: string;
   calculationMode: 'gross' | 'net';
   abstractDetails?: string;
@@ -136,6 +138,7 @@ export interface Inspection {
 
 export const DEFAULT_HEADER: InspectionHeader = {
   consignee: '',
+  consigneeShort: '',
   consigneeAddress: '',
   consigneePhone: '',
   buyer: '',
@@ -152,6 +155,7 @@ export const DEFAULT_HEADER: InspectionHeader = {
   startingBlockNumber: 1,
   marksAndNos: '',
   stoneType: '',
+  stoneDescription: '',
   quarryCode: '',
   calculationMode: 'net',
   hsCode: '',

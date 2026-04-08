@@ -23,7 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-type DocType = 'gross-packing' | 'net-packing' | 'gross-invoice' | 'net-invoice' | 'normal-report';
+type DocType = 'gross-packing' | 'net-packing' | 'gross-invoice' | 'net-invoice' | 'normal-report' | 'abstract-report';
 
 export default function ExportPage() {
   const navigate = useNavigate();
@@ -134,7 +134,8 @@ export default function ExportPage() {
   };
 
   const docs: { key: DocType; label: string }[] = [
-    { key: 'normal-report', label: 'Inspection Report' },
+    { key: 'normal-report', label: 'Normal Report' },
+    { key: 'abstract-report', label: 'Abstract Report' },
     { key: 'gross-packing', label: 'G. Packing list' },
     { key: 'net-packing', label: 'N. Packing list' },
     { key: 'gross-invoice', label: 'G. Invoice' },
@@ -230,7 +231,7 @@ export default function ExportPage() {
                <div className="scale-[0.6] origin-top transform-gpu">
                   <div ref={printRef} className={cn(
                     "bg-white text-black p-[5mm] text-[8px] leading-tight mx-auto shadow-2xl",
-                    activeDoc === 'normal-report' ? "w-[297mm] min-h-[210mm]" : "w-[210mm] min-h-[297mm]"
+                    activeDoc === 'abstract-report' ? "w-[297mm] min-h-[210mm]" : "w-[210mm] min-h-[297mm]"
                   )}>
                     <PreviewContent 
                       activeDoc={activeDoc} 
@@ -277,7 +278,7 @@ export default function ExportPage() {
 function PreviewContent({ activeDoc, cp, h, blocks, totals, blockRange, isEditing, inspectionPhotos }: any) {
   return (
     <>
-      {activeDoc !== 'normal-report' && (
+      {(activeDoc !== 'normal-report' && activeDoc !== 'abstract-report') && (
         <InvoiceHeader
           cp={cp}
           h={h}
@@ -291,7 +292,16 @@ function PreviewContent({ activeDoc, cp, h, blocks, totals, blockRange, isEditin
       )}
 
       {activeDoc === 'normal-report' && (
-        <InspectionReportBody
+        <NormalReportBody
+          blocks={blocks}
+          h={h}
+          cp={cp}
+          inspectionPhotos={inspectionPhotos}
+        />
+      )}
+
+      {activeDoc === 'abstract-report' && (
+        <AbstractReportBody
           blocks={blocks}
           h={h}
           cp={cp}
@@ -347,7 +357,6 @@ function DocumentEditor({ h, cp, blocks, onHeaderChange, onProfileChange, onBloc
   };
 
   const loadFromCustomer = (customer: Customer) => {
-    // Fill in consignee details
     onHeaderChange({
       ...h,
       consignee: customer.name,
@@ -361,120 +370,327 @@ function DocumentEditor({ h, cp, blocks, onHeaderChange, onProfileChange, onBloc
       termsOfPayment: customer.defaultTermsOfPayment || h.termsOfPayment,
       currency: customer.defaultCurrency || h.currency,
     });
-    
-    // If the customer has bank details, maybe the user wants to update the exporter profile? 
-    // Usually exporter bank details stay the same, but let's see. 
-    // For now we just load the consignee-related fields.
   };
 
   return (
     <Card className="flex-1 overflow-hidden flex flex-col glass-panel border-none shadow-none rounded-xl">
-      <div className="px-4 pt-3 pb-2 border-b border-border">
-        <h3 className="text-[10px] font-black uppercase tracking-widest text-primary">Edit Blocks</h3>
-        <p className="text-[9px] text-muted-foreground mt-0.5">Modify dimensions, remarks, and type for each block</p>
-      </div>
+      <Tabs defaultValue="blocks" className="flex-1 flex flex-col overflow-hidden">
+        <div className="px-4 pt-3 pb-2 border-b border-border flex items-center justify-between">
+          <TabsList className="bg-muted/50 p-1">
+            <TabsTrigger value="blocks" className="text-[10px] px-3 py-1.5 h-auto uppercase font-bold tracking-wider">Blocks</TabsTrigger>
+            <TabsTrigger value="header" className="text-[10px] px-3 py-1.5 h-auto uppercase font-bold tracking-wider">Header</TabsTrigger>
+            <TabsTrigger value="exporter" className="text-[10px] px-3 py-1.5 h-auto uppercase font-bold tracking-wider">Exporter</TabsTrigger>
+          </TabsList>
 
-      <div className="flex-1 overflow-hidden">
-        <ScrollArea className="h-full p-4">
-          <div className="space-y-3 pb-4">
-             <div className="space-y-3">
-               {blocks.map((block, idx) => (
-                 <div key={block.id} className="p-3 border rounded-lg bg-card/50 space-y-3">
-                    <div className="flex items-center justify-between border-b pb-2">
-                      <span className="text-[10px] font-black text-primary uppercase tracking-tighter">Block #{block.blockNo}</span>
-                      <span className="text-[10px] font-mono opacity-50">{block.id.slice(0,8)}</span>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-[9px] uppercase font-bold opacity-70">Length (L1)</Label>
-                        <Input 
-                          type="number" 
-                          value={block.l1} 
-                          onChange={(e) => {
-                            const newBlocks = [...blocks];
-                            newBlocks[idx] = buildBlock(block.id, block.blockNo, parseInt(e.target.value) || 0, block.l2, block.l3, h, block.remarks, undefined, block.type, block.pricePerCbm, block.photoUrl, block.photoUrls);
-                            onBlocksChange(newBlocks);
-                          }}
-                          className="h-8 text-xs"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-[9px] uppercase font-bold opacity-70">Height (L2)</Label>
-                        <Input 
-                          type="number" 
-                          value={block.l2} 
-                          onChange={(e) => {
-                            const newBlocks = [...blocks];
-                            newBlocks[idx] = buildBlock(block.id, block.blockNo, block.l1, parseInt(e.target.value) || 0, block.l3, h, block.remarks, undefined, block.type, block.pricePerCbm, block.photoUrl, block.photoUrls);
-                            onBlocksChange(newBlocks);
-                          }}
-                          className="h-8 text-xs"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-[9px] uppercase font-bold opacity-70">Width (L3)</Label>
-                        <Input 
-                          type="number" 
-                          value={block.l3} 
-                          onChange={(e) => {
-                            const newBlocks = [...blocks];
-                            newBlocks[idx] = buildBlock(block.id, block.blockNo, block.l1, block.l2, parseInt(e.target.value) || 0, h, block.remarks, undefined, block.type, block.pricePerCbm, block.photoUrl, block.photoUrls);
-                            onBlocksChange(newBlocks);
-                          }}
-                          className="h-8 text-xs"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-[9px] uppercase font-bold opacity-70">Remark</Label>
-                        <Input 
-                          value={block.remarks || ''} 
-                          onChange={(e) => {
-                            const newBlocks = [...blocks];
-                            newBlocks[idx] = { ...block, remarks: e.target.value };
-                            onBlocksChange(newBlocks);
-                          }}
-                          className="h-8 text-xs italic"
-                          placeholder="Add remark..."
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex justify-between items-center pt-1">
-                       <div className="flex gap-2">
-                          {(h.blockTypes || []).map((preset: any) => (
-                            <button
-                              key={preset.id}
-                              onClick={() => {
-                                const newBlocks = [...blocks];
-                                newBlocks[idx] = buildBlock(block.id, block.blockNo, block.l1, block.l2, block.l3, h, block.remarks, undefined, preset.id, undefined, block.photoUrl, block.photoUrls);
-                                onBlocksChange(newBlocks);
-                              }}
-                              className={cn(
-                                "px-2 py-0.5 rounded text-[8px] font-bold uppercase transition-all",
-                                block.type === preset.id 
-                                  ? "bg-primary text-primary-foreground scale-110 shadow-sm" 
-                                  : "bg-muted text-muted-foreground hover:bg-muted/80"
-                              )}
-                            >
-                              T{preset.id}
-                            </button>
-                          ))}
-                       </div>
-                       <div className="text-[10px] font-mono font-bold text-green-600">
-                          {block.netCbm.toFixed(3)} CBM
-                       </div>
-                    </div>
-                 </div>
-               ))}
-             </div>
-          </div>
-          </ScrollArea>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-7 text-[10px] gap-2 uppercase font-bold tracking-wider border-primary/30 text-primary">
+                <Search className="h-3 w-3" /> Load Customer
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[200px]">
+              {customers.map((c) => (
+                <DropdownMenuItem key={c.id} onClick={() => loadFromCustomer(c)} className="text-[10px] font-medium">
+                  {c.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-      </Card>
+
+        <TabsContent value="blocks" className="flex-1 overflow-hidden m-0 p-0">
+          <ScrollArea className="h-full p-4">
+            <div className="space-y-3 pb-4">
+              {blocks.map((block, idx) => (
+                <div key={block.id} className="p-3 border rounded-lg bg-card/50 space-y-3">
+                  <div className="flex items-center justify-between border-b pb-2">
+                    <span className="text-[10px] font-black text-primary uppercase tracking-tighter">Block #{block.blockNo}</span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold opacity-70">Length (L1)</Label>
+                      <Input 
+                        type="number" 
+                        value={block.l1} 
+                        onChange={(e) => {
+                          const newBlocks = [...blocks];
+                          newBlocks[idx] = buildBlock(block.id, block.blockNo, parseInt(e.target.value) || 0, block.l2, block.l3, h, block.remarks, undefined, block.type, block.pricePerCbm, block.photoUrl, block.photoUrls);
+                          onBlocksChange(newBlocks);
+                        }}
+                        className="h-8 text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold opacity-70">Height (L2)</Label>
+                      <Input 
+                        type="number" 
+                        value={block.l2} 
+                        onChange={(e) => {
+                          const newBlocks = [...blocks];
+                          newBlocks[idx] = buildBlock(block.id, block.blockNo, block.l1, parseInt(e.target.value) || 0, block.l3, h, block.remarks, undefined, block.type, block.pricePerCbm, block.photoUrl, block.photoUrls);
+                          onBlocksChange(newBlocks);
+                        }}
+                        className="h-8 text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold opacity-70">Width (L3)</Label>
+                      <Input 
+                        type="number" 
+                        value={block.l3} 
+                        onChange={(e) => {
+                          const newBlocks = [...blocks];
+                          newBlocks[idx] = buildBlock(block.id, block.blockNo, block.l1, block.l2, parseInt(e.target.value) || 0, h, block.remarks, undefined, block.type, block.pricePerCbm, block.photoUrl, block.photoUrls);
+                          onBlocksChange(newBlocks);
+                        }}
+                        className="h-8 text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-[9px] uppercase font-bold opacity-70">Remark</Label>
+                    <Input 
+                      value={block.remarks || ''} 
+                      onChange={(e) => {
+                        const newBlocks = [...blocks];
+                        newBlocks[idx] = { ...block, remarks: e.target.value };
+                        onBlocksChange(newBlocks);
+                      }}
+                      className="h-8 text-xs italic"
+                      placeholder="Add remark..."
+                    />
+                  </div>
+
+                  <div className="flex justify-between items-center pt-1 border-t">
+                    <div className="flex gap-2">
+                      {(h.blockTypes || []).map((preset: any) => (
+                        <button
+                          key={preset.id}
+                          onClick={() => {
+                            const newBlocks = [...blocks];
+                            newBlocks[idx] = buildBlock(block.id, block.blockNo, block.l1, block.l2, block.l3, h, block.remarks, undefined, preset.id, undefined, block.photoUrl, block.photoUrls);
+                            onBlocksChange(newBlocks);
+                          }}
+                          className={cn(
+                            "px-2 py-0.5 rounded text-[8px] font-bold uppercase transition-all",
+                            block.type === preset.id 
+                              ? "bg-primary text-primary-foreground scale-110 shadow-sm" 
+                              : "bg-muted text-muted-foreground hover:bg-muted/80"
+                          )}
+                        >
+                          T{preset.id}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="text-[10px] font-mono font-bold text-green-600">
+                      {block.netCbm.toFixed(3)} CBM
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        </TabsContent>
+
+        <TabsContent value="header" className="flex-1 overflow-hidden m-0 p-0">
+          <ScrollArea className="h-full p-4">
+            <div className="space-y-4 pb-6">
+              <section className="space-y-3">
+                <h4 className="text-[10px] font-black uppercase text-primary border-b pb-1">Customer & Destination</h4>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold opacity-70">Consignee Name (Full)</Label>
+                      <Input value={h.consignee} onChange={(e) => updateH('consignee', e.target.value)} className="h-8 text-xs font-bold" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold opacity-70">Consignee Mark / Short Name</Label>
+                      <Input value={h.consigneeShort || ''} onChange={(e) => updateH('consigneeShort', e.target.value)} className="h-8 text-xs border-primary/40 bg-primary/5" placeholder="e.g. HL/HLN" />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[9px] uppercase font-bold opacity-70">Address</Label>
+                    <Textarea value={h.consigneeAddress} onChange={(e) => updateH('consigneeAddress', e.target.value)} className="min-h-[60px] text-xs resize-none" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold opacity-70">Notify Party</Label>
+                      <Input value={h.notifyParty} onChange={(e) => updateH('notifyParty', e.target.value)} className="h-8 text-xs" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold opacity-70">Consignee Phone</Label>
+                      <Input value={h.consigneePhone} onChange={(e) => updateH('consigneePhone', e.target.value)} className="h-8 text-xs" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold opacity-70">Final Destination</Label>
+                      <Input value={h.finalDestination} onChange={(e) => updateH('finalDestination', e.target.value)} className="h-8 text-xs" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold opacity-70">Country</Label>
+                      <Input value={h.finalDestinationCountry} onChange={(e) => updateH('finalDestinationCountry', e.target.value)} className="h-8 text-xs" />
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section className="space-y-3">
+                <h4 className="text-[10px] font-black uppercase text-primary border-b pb-1">Stone & Commercial</h4>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold opacity-70">Stone Name (Main)</Label>
+                      <Input value={h.stoneType} onChange={(e) => updateH('stoneType', e.target.value)} className="h-8 text-xs" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold opacity-70">Stone Name (Description)</Label>
+                      <Input value={h.stoneDescription || ''} onChange={(e) => updateH('stoneDescription', e.target.value)} className="h-8 text-xs border-primary/40 bg-primary/5" placeholder="e.g. STEEL GREY" />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[9px] uppercase font-bold opacity-70">Invoice No</Label>
+                    <Input value={h.invoiceNumber} onChange={(e) => updateH('invoiceNumber', e.target.value)} className="h-8 text-xs" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold opacity-70">Marks & Nos</Label>
+                      <Input value={h.marksAndNos} onChange={(e) => updateH('marksAndNos', e.target.value)} className="h-8 text-xs" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold opacity-70">HS Code</Label>
+                      <Input value={h.hsCode} onChange={(e) => updateH('hsCode', e.target.value)} className="h-8 text-xs" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold opacity-70">Currency</Label>
+                      <Input value={h.currency} onChange={(e) => updateH('currency', e.target.value)} className="h-8 text-xs" />
+                    </div>
+                    <div className="space-y-1 col-span-2">
+                      <Label className="text-[9px] uppercase font-bold opacity-70">Unit Price / CBM</Label>
+                      <Input type="number" value={h.pricePerCbm} onChange={(e) => updateH('pricePerCbm', parseFloat(e.target.value) || 0)} className="h-8 text-xs" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold opacity-70">Terms of Delivery</Label>
+                      <Input value={h.termsOfDelivery} onChange={(e) => updateH('termsOfDelivery', e.target.value)} className="h-8 text-xs" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold opacity-70">Terms of Payment</Label>
+                      <Input value={h.termsOfPayment} onChange={(e) => updateH('termsOfPayment', e.target.value)} className="h-8 text-xs" />
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section className="space-y-3">
+                <h4 className="text-[10px] font-black uppercase text-primary border-b pb-1">Shipment & Details</h4>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold opacity-70">Vessel</Label>
+                      <Input value={h.vessel} onChange={(e) => updateH('vessel', e.target.value)} className="h-8 text-xs" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold opacity-70">Port of Discharge</Label>
+                      <Input value={h.portOfDischarge} onChange={(e) => updateH('portOfDischarge', e.target.value)} className="h-8 text-xs" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold opacity-70">Pre-Carriage By</Label>
+                      <Input value={h.preCarriageBy} onChange={(e) => updateH('preCarriageBy', e.target.value)} className="h-8 text-xs" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold opacity-70">Place of Receipt</Label>
+                      <Input value={h.placeOfReceipt} onChange={(e) => updateH('placeOfReceipt', e.target.value)} className="h-8 text-xs" />
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </ScrollArea>
+        </TabsContent>
+
+        <TabsContent value="exporter" className="flex-1 overflow-hidden m-0 p-0">
+          <ScrollArea className="h-full p-4">
+            <div className="space-y-4 pb-6">
+              <section className="space-y-3">
+                <h4 className="text-[10px] font-black uppercase text-secondary border-b pb-1">Exporter Company</h4>
+                <div className="space-y-2">
+                  <div className="space-y-1">
+                    <Label className="text-[9px] uppercase font-bold opacity-70">Company Name</Label>
+                    <Input value={cp.companyName} onChange={(e) => updateCp('companyName', e.target.value)} className="h-8 text-xs" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[9px] uppercase font-bold opacity-70">Address</Label>
+                    <Textarea value={cp.address} onChange={(e) => updateCp('address', e.target.value)} className="min-h-[60px] text-xs resize-none" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold opacity-70">Country</Label>
+                      <Input value={cp.country} onChange={(e) => updateCp('country', e.target.value)} className="h-8 text-xs" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold opacity-70">LUT Number</Label>
+                      <Input value={cp.lutNumber} onChange={(e) => updateCp('lutNumber', e.target.value)} className="h-8 text-xs" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold opacity-70">RBI Code</Label>
+                      <Input value={cp.rbiCode} onChange={(e) => updateCp('rbiCode', e.target.value)} className="h-8 text-xs" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold opacity-70">IE Code</Label>
+                      <Input value={cp.ieCode} onChange={(e) => updateCp('ieCode', e.target.value)} className="h-8 text-xs" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold opacity-70">GST Number</Label>
+                      <Input value={cp.gstNumber} onChange={(e) => updateCp('gstNumber', e.target.value)} className="h-8 text-xs" />
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section className="space-y-3">
+                <h4 className="text-[10px] font-black uppercase text-secondary border-b pb-1">Bank Details</h4>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold opacity-70">Bank Name</Label>
+                      <Input value={cp.bankName} onChange={(e) => updateCp('bankName', e.target.value)} className="h-8 text-xs" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold opacity-70">Branch</Label>
+                      <Input value={cp.bankBranch} onChange={(e) => updateCp('bankBranch', e.target.value)} className="h-8 text-xs" />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[9px] uppercase font-bold opacity-70">Bank Address</Label>
+                    <Textarea value={cp.bankAddress} onChange={(e) => updateCp('bankAddress', e.target.value)} className="min-h-[40px] text-xs resize-none" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold opacity-70">Account Number</Label>
+                      <Input value={cp.accountNumber} onChange={(e) => updateCp('accountNumber', e.target.value)} className="h-8 text-xs" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[9px] uppercase font-bold opacity-70">SWIFT Code</Label>
+                      <Input value={cp.swiftCode} onChange={(e) => updateCp('swiftCode', e.target.value)} className="h-8 text-xs" />
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </ScrollArea>
+        </TabsContent>
+      </Tabs>
+    </Card>
   );
 }
 
@@ -675,8 +891,8 @@ function PackingListBody({ blocks, type, h, cp, totals }: { blocks: any[]; type:
           <tr style={{ height: '400px', verticalAlign: 'top' }}>
             <td style={{ ...cellStyle }}>
               <div style={{ fontWeight: 'bold' }}>ROUGH GRANITE BLOCKS</div>
-              <div style={{ fontWeight: 'bold' }}>{h.stoneType}</div>
-              <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>SHIPPING MARK: {h.marksAndNos}</div>
+              <div style={{ fontWeight: 'bold' }}>{h.stoneDescription || h.stoneType}</div>
+              <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>{h.consigneeShort || h.consignee}</div>
 
               <div className='flex flex-col gap-1 mt-4'>
                 {blocks.map((b) => (
@@ -782,8 +998,8 @@ function InvoiceBody({ blocks, type, h, cp, totals, blockRange }: { blocks: any[
           <tr>
             <td style={{ ...cellStyle, borderBottom: 'none' }}>
               <div style={{ fontWeight: 'bold' }}>ROUGH GRANITE BLOCKS</div>
-              <div style={{ fontWeight: 'bold' }}>{h.stoneType}</div>
-              <div style={{ fontWeight: 'bold' }}>SHIPPING MARK: {h.marksAndNos}</div>
+              <div style={{ fontWeight: 'bold' }}>{h.stoneDescription || h.stoneType}</div>
+              <div style={{ fontWeight: 'bold' }}>{h.consigneeShort || h.consignee}</div>
             </td>
             <td style={{ ...cellStyle, borderBottom: 'none' }}></td>
             <td style={{ ...cellStyle, borderBottom: 'none' }}></td>
@@ -850,7 +1066,7 @@ function InvoiceBody({ blocks, type, h, cp, totals, blockRange }: { blocks: any[
 
 
 
-function InspectionReportBody({ blocks, h, cp, inspectionPhotos }: { blocks: any[]; h: any; cp: any; inspectionPhotos?: string[] }) {
+function AbstractReportBody({ blocks, h, cp, inspectionPhotos }: { blocks: any[]; h: any; cp: any; inspectionPhotos?: string[] }) {
   const cellStyle = { border: '1px solid #000', padding: '3px 4px', fontSize: '9px', verticalAlign: 'middle', textAlign: 'center' as const };
   const headerStyle = { ...cellStyle, fontWeight: 'bold' as const, background: '#f8fafc', textTransform: 'uppercase' as const };
   const subHeaderStyle = { ...cellStyle, fontWeight: 'bold' as const, background: '#f1f5f9', fontSize: '8px' };
@@ -966,6 +1182,147 @@ function InspectionReportBody({ blocks, h, cp, inspectionPhotos }: { blocks: any
           <div className="text-[10px] font-black uppercase mb-1">{cp.companyName}</div>
           <div className="h-12 w-32 border-b border-zinc-400 mb-1 ml-auto"></div>
           <p className="text-[8px] font-bold uppercase text-zinc-500 tracking-widest">Authorized Inspection Signatory</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NormalReportBody({ blocks, cp, h, inspectionPhotos }: any) {
+  const cellStyle = { border: '1px solid #000', padding: '4px', verticalAlign: 'middle', textAlign: 'center' as const, fontSize: '10px' };
+  const headerStyle = { ...cellStyle, fontWeight: 'bold' as const, background: '#f8fafc', textTransform: 'uppercase' as const };
+
+  return (
+    <div className="w-full space-y-8">
+      {blocks.map((b: any, idx: number) => {
+        const preset = h.blockTypes?.find((p: any) => p.id === b.type) || h.blockTypes?.[0];
+        const allowance = b.allowance !== undefined ? b.allowance : (preset?.allowance || 0);
+        const allowanceText = allowance > 0 ? `${allowance} cm applied effectively` : 'No allowance applied';
+
+        return (
+          <div key={b.id} className="border-[3px] border-black p-4 bg-white break-inside-avoid mb-8 page-break-after-always">
+            {/* Header */}
+            <div className="flex justify-between items-center border-b-2 border-black pb-4 mb-6">
+               <div className="text-left">
+                  <h2 className="text-2xl font-black text-[#1a365d] leading-none mb-1 uppercase italic tracking-tighter">{cp.companyName}</h2>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-[#0369a1]">Inspection Detail Report</p>
+               </div>
+               <div className="text-right">
+                  <div className="bg-black text-white px-5 py-2 text-2xl font-black uppercase tracking-tighter rounded-sm shadow-lg">
+                    BLOCK #{String(b.blockNo).padStart(3, '0')}
+                  </div>
+               </div>
+            </div>
+
+            {/* Photo Grid - Show all block photos */}
+            <div className="grid grid-cols-2 gap-4 mb-8">
+              {((b.photoUrls && b.photoUrls.length > 0) || b.photoUrl) ? (
+                <>
+                  {[...(b.photoUrl ? [b.photoUrl] : []), ...(b.photoUrls || [])].map((url, pIdx) => (
+                    <div key={pIdx} className="border-2 border-black p-1 aspect-[4/3] bg-zinc-50 overflow-hidden shadow-sm">
+                       <img src={url} alt={`Block ${b.blockNo} - ${pIdx + 1}`} className="w-full h-full object-cover" />
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <div className="col-span-2 h-48 border-[3px] border-dashed border-zinc-200 flex flex-col items-center justify-center text-zinc-300 font-bold uppercase text-xs italic gap-2">
+                  <X className="h-8 w-8 opacity-20" />
+                  No photos captured for Block {b.blockNo}
+                </div>
+              )}
+            </div>
+
+            {/* Measurement Table */}
+            <div className="px-4">
+              <div className="bg-white border-2 border-black shadow-xl overflow-hidden rounded-sm">
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ ...headerStyle, width: '30%', textAlign: 'left' }}>MEASUREMENT TYPE</th>
+                      <th style={headerStyle}>LENGTH</th>
+                      <th style={headerStyle}>HEIGHT</th>
+                      <th style={headerStyle}>WIDTH</th>
+                      <th style={{ ...headerStyle, background: '#e0f2fe', color: '#0369a1' }}>NET CBM</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style={{ ...cellStyle, fontWeight: 'bold', textAlign: 'left' }}>GROSS ENTRY</td>
+                      <td style={cellStyle}>{b.l1}</td>
+                      <td style={cellStyle}>{b.l2}</td>
+                      <td style={cellStyle}>{b.l3}</td>
+                      <td style={cellStyle}>{( (b.l1 * b.l2 * b.l3) / 1000000 ).toFixed(3)}</td>
+                    </tr>
+                    <tr style={{ background: '#fffcf0' }}>
+                      <td style={{ ...cellStyle, fontWeight: 'bold', textAlign: 'left' }}>
+                        FINAL NET (Deducted)
+                        <div className="text-[7px] text-zinc-400 font-normal uppercase">{allowanceText}</div>
+                      </td>
+                      <td style={cellStyle}>{b.l1}</td>
+                      <td style={{ ...cellStyle, color: '#dc2626', fontWeight: 'bold' }}>{Math.max(b.l2 - allowance, 0)}</td>
+                      <td style={cellStyle}>{b.l3}</td>
+                      <td style={{ ...cellStyle, fontWeight: '900', color: '#16a34a', fontSize: '14px', background: '#f0fdf4' }}>{Number(b.netCbm || 0).toFixed(3)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {b.remarks && (
+              <div className="mt-8 px-4">
+                <div style={{ border: '2px solid #000', padding: '12px', backgroundColor: '#fafafa', position: 'relative' }}>
+                  <div className="absolute -top-3 left-4 bg-black text-white px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest">Inspector Remarks</div>
+                  <div style={{ fontStyle: 'italic', fontWeight: 'bold', fontSize: '14px', color: '#000' }}>
+                    &ldquo; {b.remarks} &rdquo;
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {/* General Inspection Photos Appendix for Normal Report */}
+      {inspectionPhotos && inspectionPhotos.length > 0 && (
+        <div className="mt-12 pt-8 border-t-2 border-black page-break-before mb-8 font-serif">
+          <h3 className="text-xl font-black uppercase tracking-widest text-center mb-8 underline">SITE EVIDENCE APPENDIX</h3>
+          <div className="grid grid-cols-2 gap-6 px-4">
+            {inspectionPhotos.map((url: string, idx: number) => (
+              <div key={`gen-${idx}`} className="flex flex-col gap-2">
+                <div className="border-2 border-black p-1 bg-white">
+                  <img src={url} alt={`Site Evidence ${idx + 1}`} className="w-full h-64 object-cover" />
+                </div>
+                <div className="text-[10px] font-bold uppercase text-center bg-zinc-100 p-1 border border-black border-top-0">
+                  GENERAL SITE PHOTO #{idx + 1}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="mt-12 pt-8 border-t-[3px] border-black" style={{ pageBreakInside: 'avoid' }}>
+        <div className="flex justify-between items-end px-4 font-serif">
+          <div className="space-y-2">
+             <div className="flex items-center gap-4">
+                <div className="text-center bg-zinc-100 border border-black p-2 min-w-[100px]">
+                   <p className="text-[8px] font-bold uppercase text-zinc-500">Total Blocks</p>
+                   <p className="text-2xl font-black">{blocks.length}</p>
+                </div>
+                <div className="text-center bg-zinc-100 border border-black p-2 min-w-[150px]">
+                   <p className="text-[8px] font-bold uppercase text-zinc-500">Total Net Volume</p>
+                   <p className="text-2xl font-black text-green-700">{blocks.reduce((acc: any, b: any) => acc + (b.netCbm || 0), 0).toFixed(3)} m³</p>
+                </div>
+             </div>
+             <p className="text-[9px] font-bold text-zinc-400 uppercase italic">* This report serves as an official inspection document generated via Dakshin Scanner App.</p>
+          </div>
+          <div className="text-right">
+            <div style={{ color: '#1a365d' }} className="font-black uppercase text-xl border-b-2 border-black pb-1 mb-4 flex flex-col items-end">
+               <span className="text-[10px] text-zinc-400 font-bold mb-1">FOR</span>
+               {cp.companyName}
+            </div>
+            <p className="font-black italic text-[10px] uppercase tracking-widest">Authorized Inspection Signatory</p>
+          </div>
         </div>
       </div>
     </div>
