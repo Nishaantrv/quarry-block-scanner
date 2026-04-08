@@ -36,7 +36,7 @@ import {
 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 
-type DocType = 'gross-packing' | 'net-packing' | 'gross-invoice' | 'net-invoice' | 'normal-report' | 'abstract-report';
+type DocType = 'gross-packing' | 'net-packing' | 'gross-invoice' | 'net-invoice' | 'normal-report';
 
 export default function ExportPage() {
   const navigate = useNavigate();
@@ -63,7 +63,7 @@ export default function ExportPage() {
     if (isMobile) {
       // Calculate fit-to-width scale
       const screenWidth = window.innerWidth - 32; // padding
-      const docWidth = activeDoc === 'abstract-report' ? 297 * 3.78 : 210 * 3.78; // mm to px approx
+      const docWidth = 210 * 3.78; // mm to px approx
       setZoom(Math.min(screenWidth / docWidth, 1));
     } else {
       setZoom(1);
@@ -120,14 +120,10 @@ export default function ExportPage() {
 
     const doc = printWindow.document;
     const clone = content.cloneNode(true) as HTMLDivElement;
-    
-    // Switch orientation based on doc type
-    const isLandscape = activeDoc === 'abstract-report';
-    const paperWidth = isLandscape ? '297mm' : '210mm';
 
     const printStyles = `
       @page { 
-        size: ${isLandscape ? 'A4 landscape' : 'A4 portrait'}; 
+        size: A4 portrait; 
         margin: 0; 
       }
       body { 
@@ -138,7 +134,7 @@ export default function ExportPage() {
         print-color-adjust: exact;
       }
       .print-wrapper {
-        width: ${paperWidth};
+        width: 210mm;
         margin: 0 auto;
         background: white;
       }
@@ -158,7 +154,7 @@ export default function ExportPage() {
     doc.head.appendChild(style);
     
     // Force some styles on the clone to ensure it fits the paper
-    clone.style.width = paperWidth;
+    clone.style.width = '210mm';
     clone.style.margin = '0';
     clone.style.boxShadow = 'none';
 
@@ -175,7 +171,6 @@ export default function ExportPage() {
 
   const docs: { key: DocType; label: string }[] = [
     { key: 'normal-report', label: 'Normal Report' },
-    { key: 'abstract-report', label: 'Abstract Report' },
     { key: 'gross-packing', label: 'G. Packing list' },
     { key: 'net-packing', label: 'N. Packing list' },
     { key: 'gross-invoice', label: 'G. Invoice' },
@@ -271,7 +266,7 @@ export default function ExportPage() {
                <div className="scale-[0.6] origin-top transform-gpu">
                   <div className={cn(
                     "bg-white text-black p-[5mm] text-[8px] leading-tight mx-auto shadow-2xl",
-                    activeDoc === 'abstract-report' ? "w-[297mm] min-h-[210mm]" : "w-[210mm] min-h-[297mm]"
+                    "w-[210mm] min-h-[297mm]"
                   )}>
                     <PreviewContent 
                       activeDoc={activeDoc} 
@@ -306,7 +301,7 @@ export default function ExportPage() {
                    size="icon" 
                    onClick={() => {
                       const screenWidth = window.innerWidth - 32;
-                      const docWidth = activeDoc === 'abstract-report' ? 297 * 3.78 : 210 * 3.78;
+                      const docWidth = 210 * 3.78;
                       setZoom(Math.min(screenWidth / docWidth, 1));
                    }} 
                    className="h-8 w-8"
@@ -326,7 +321,7 @@ export default function ExportPage() {
                 <div className={cn("border shadow-lg p-2 transition-colors bg-zinc-500/10 rounded-xl")}>
                   <div ref={printRef} className={cn(
                     "bg-white text-black p-[5mm] text-[8px] leading-tight mx-auto shadow-sm print:shadow-none",
-                    activeDoc === 'abstract-report' ? "w-[297mm] min-h-[210mm]" : "w-[210mm] min-h-[297mm]"
+                    "w-[210mm] min-h-[297mm]"
                   )}>
                       <PreviewContent 
                         activeDoc={activeDoc} 
@@ -350,7 +345,7 @@ export default function ExportPage() {
       <div className="fixed -left-[10000px] -top-[10000px] pointer-events-none" aria-hidden="true">
         <div ref={printHiddenRef} className={cn(
           "bg-white text-black p-[5mm] text-[8px] leading-tight",
-          activeDoc === 'abstract-report' ? "w-[297mm]" : "w-[210mm]"
+          "w-[210mm]"
         )}>
           <PreviewContent 
             activeDoc={activeDoc} 
@@ -372,7 +367,7 @@ export default function ExportPage() {
 function PreviewContent({ activeDoc, cp, h, blocks, totals, blockRange, isEditing, inspectionPhotos }: any) {
   return (
     <>
-      {(activeDoc !== 'normal-report' && activeDoc !== 'abstract-report') && (
+      {activeDoc !== 'normal-report' && (
         <InvoiceHeader
           cp={cp}
           h={h}
@@ -394,14 +389,6 @@ function PreviewContent({ activeDoc, cp, h, blocks, totals, blockRange, isEditin
         />
       )}
 
-      {activeDoc === 'abstract-report' && (
-        <AbstractReportBody
-          blocks={blocks}
-          h={h}
-          cp={cp}
-          inspectionPhotos={inspectionPhotos}
-        />
-      )}
 
       {(activeDoc === 'gross-packing' || activeDoc === 'net-packing') && (
         <PackingListBody
@@ -1149,130 +1136,6 @@ function InvoiceBody({ blocks, type, h, cp, totals, blockRange }: { blocks: any[
           </tr>
         </tbody>
       </table>
-    </div>
-  );
-}
-
-
-
-function AbstractReportBody({ blocks, h, cp, inspectionPhotos }: { blocks: any[]; h: any; cp: any; inspectionPhotos?: string[] }) {
-  const cellStyle = { border: '1px solid #000', padding: '3px 4px', fontSize: '9px', verticalAlign: 'middle', textAlign: 'center' as const };
-  const headerStyle = { ...cellStyle, fontWeight: 'bold' as const, background: '#f8fafc', textTransform: 'uppercase' as const };
-  const subHeaderStyle = { ...cellStyle, fontWeight: 'bold' as const, background: '#f1f5f9', fontSize: '8px' };
-
-  return (
-    <div className="w-full font-serif">
-      <div className="text-center py-6 mb-4 border-b-2 border-black">
-        <h2 className="text-xl font-black uppercase tracking-tight text-[#0369a1]">
-          M/s. {cp.companyName} - {h.stoneType || 'XOW / XMN'}
-        </h2>
-        <h3 className="text-2xl font-black uppercase tracking-widest mt-1">INSPECTION REPORT</h3>
-      </div>
-
-      <div className="overflow-x-auto">
-        <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
-          <thead>
-            <tr>
-              <th style={{ ...headerStyle, width: '30px' }}>SL</th>
-              <th style={{ ...headerStyle, width: '70px' }}>DATE</th>
-              <th style={{ ...headerStyle, width: '60px' }}>BLOCK NO</th>
-              <th style={{ ...headerStyle, width: '50px' }}>LENGTH</th>
-              <th style={{ ...headerStyle, width: '50px' }}>HEIGHT</th>
-              <th style={{ ...headerStyle, width: '50px' }}>WIDTH</th>
-              <th style={{ ...headerStyle, width: '60px' }}>TYPE</th>
-              <th style={{ ...headerStyle, width: '50px' }}>ALLOW.</th>
-              <th style={{ ...headerStyle, width: '70px' }}>CBM</th>
-              <th style={{ ...headerStyle }}>REMARK</th>
-            </tr>
-          </thead>
-          <tbody>
-            {blocks.map((b, idx) => {
-              const preset = h.blockTypes?.find((p: any) => p.id === b.type) || h.blockTypes?.[0];
-              const allowance = b.allowance !== undefined ? b.allowance : (preset?.allowance || 0);
-
-              return (
-                <tr key={b.id}>
-                  <td style={cellStyle}>{idx + 1}</td>
-                  <td style={cellStyle}>{new Date(b.createdAt || Date.now()).toLocaleDateString('en-GB')}</td>
-                  <td style={{ ...cellStyle, fontWeight: '900', color: '#1d4ed8' }}>{b.blockNo}</td>
-                  <td style={cellStyle}>{b.l1}</td>
-                  <td style={cellStyle}>{b.l2}</td>
-                  <td style={cellStyle}>{b.l3}</td>
-                  <td style={{ ...cellStyle, textTransform: 'uppercase', fontSize: '8px', fontWeight: 'bold' }}>{b.type || 'SMALL'}</td>
-                  <td style={{ ...cellStyle, fontWeight: 'bold', color: '#dc2626' }}>{allowance}</td>
-                  <td style={{ ...cellStyle, fontWeight: '900' }}>{Number(b.netCbm || 0).toFixed(3)}</td>
-                  <td style={{ ...cellStyle, textAlign: 'left', fontSize: '8px', fontStyle: 'italic' }}>
-                    {b.remarks}
-                  </td>
-                </tr>
-              );
-            })}
-            {/* Totals Row */}
-            <tr style={{ background: '#f8fafc', fontWeight: 'bold' }}>
-              <td style={{ ...cellStyle, textAlign: 'right' }} colSpan={8}>TOTALS</td>
-              <td style={cellStyle}>{blocks.reduce((acc, b) => acc + (b.netCbm || 0), 0).toFixed(3)}</td>
-              <td style={cellStyle}></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      
-      {/* PHOTO APPENDIX */}
-      {(inspectionPhotos?.length ?? 0) > 0 || blocks.some(b => b.photoUrl || (b.photoUrls?.length ?? 0) > 0) ? (
-        <div className="mt-12 pt-8 border-t-2 border-black page-break-before">
-          <h3 className="text-xl font-black uppercase tracking-widest text-center mb-8 underline">PHOTO APPENDIX</h3>
-          
-          <div className="grid grid-cols-2 gap-6">
-            {/* General Photos First */}
-            {inspectionPhotos?.map((url, idx) => (
-              <div key={`gen-${idx}`} className="flex flex-col gap-2">
-                <div className="border-2 border-black p-1 bg-white">
-                  <img src={url} alt={`Evidence ${idx + 1}`} className="w-full h-64 object-cover" />
-                </div>
-                <div className="text-[10px] font-bold uppercase text-center bg-zinc-100 p-1 border border-black border-top-0">
-                  SITE EVIDENCE #{idx + 1}
-                </div>
-              </div>
-            ))}
-
-            {/* Then Block Photos */}
-            {blocks.filter(b => b.photoUrl || b.photoUrls?.length).map((b, bIdx) => {
-              const allPhotos = [...(b.photoUrl ? [b.photoUrl] : []), ...(b.photoUrls || [])];
-              return allPhotos.map((url, pIdx) => (
-                <div key={`blk-${bIdx}-${pIdx}`} className="flex flex-col gap-2">
-                  <div className="border-2 border-black p-1 bg-white">
-                    <img src={url} alt={`Block ${b.blockNo}`} className="w-full h-64 object-cover" />
-                  </div>
-                  <div className="text-[10px] font-bold uppercase text-center bg-zinc-100 p-1 border border-black border-top-0">
-                    BLOCK #{String(b.blockNo).padStart(3, '0')} - VIEW {pIdx + 1}
-                  </div>
-                </div>
-              ));
-            })}
-          </div>
-        </div>
-      ) : null}
-
-      <div className="mt-8 pt-6 border-t-2 border-black flex justify-between items-end px-4">
-        <div className="space-y-1">
-          <p className="text-[9px] font-bold uppercase text-zinc-500">Report Information</p>
-          <div className="flex gap-4">
-            <div>
-              <span className="text-[8px] font-bold text-zinc-400">TOTAL BLOCKS:</span>
-              <span className="ml-1 font-black text-sm">{blocks.length}</span>
-            </div>
-            <div>
-              <span className="text-[8px] font-bold text-zinc-400">TOTAL CBM:</span>
-              <span className="ml-1 font-black text-sm">{blocks.reduce((acc, b) => acc + (b.grossCbm || (b.l1*b.l2*b.l3)/1000000), 0).toFixed(3)}</span>
-            </div>
-          </div>
-        </div>
-        <div className="text-right">
-          <div className="text-[10px] font-black uppercase mb-1">{cp.companyName}</div>
-          <div className="h-12 w-32 border-b border-zinc-400 mb-1 ml-auto"></div>
-          <p className="text-[8px] font-bold uppercase text-zinc-500 tracking-widest">Authorized Inspection Signatory</p>
-        </div>
-      </div>
     </div>
   );
 }
