@@ -1203,13 +1203,23 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos }: any) {
               </div>
             </div>
 
-            {/* Photo List - Single column, fully viewable */}
-            <div className="grid grid-cols-1 gap-6 mb-8 px-4">
+            {/* Photo List - Single column, fully viewable with side labels */}
+            <div className="grid grid-cols-1 gap-12 mb-8 px-4">
               {((b.photoUrls && b.photoUrls.length > 0) || b.photoUrl) ? (
                 <>
                   {[...(b.photoUrl ? [b.photoUrl] : []), ...(b.photoUrls || [])].map((url, pIdx) => (
-                    <div key={pIdx} className="border-2 border-black p-1 bg-zinc-50 shadow-sm">
-                       <img src={url} alt={`Block ${b.blockNo} - ${pIdx + 1}`} className="w-full h-auto object-contain block mx-auto" style={{ maxHeight: '400px' }} />
+                    <div key={pIdx} className="space-y-4 text-center">
+                       <div className="text-sm font-black uppercase text-red-600 tracking-widest border-b border-red-200 pb-1 inline-block min-w-[300px]">
+                         BLOCK NO : {b.blockNo}/{String.fromCharCode(65 + pIdx)} SIDE
+                       </div>
+                       <div className="border-4 border-black p-2 bg-zinc-50 shadow-xl mx-auto block max-w-full">
+                          <img 
+                            src={url} 
+                            alt={`Block ${b.blockNo} - Side ${String.fromCharCode(65 + pIdx)}`} 
+                            className="w-full h-auto object-contain block mx-auto" 
+                            style={{ maxHeight: '600px' }} 
+                          />
+                       </div>
                     </div>
                   ))}
                 </>
