@@ -52,6 +52,7 @@ export interface BlockTypePreset {
   id: string; // "1", "2", "3"
   allowance: number;
   pricePerCbm: number;
+  startingNumber?: number; // Optional per-type sequence start
 }
 
 export interface InspectionHeader {
@@ -165,9 +166,9 @@ export const DEFAULT_HEADER: InspectionHeader = {
   countryOfOrigin: '',
   abstractDetails: '',
   blockTypes: [
-    { id: '1', allowance: 15, pricePerCbm: 0 },
-    { id: '2', allowance: 15, pricePerCbm: 0 },
-    { id: '3', allowance: 15, pricePerCbm: 0 },
+    { id: '1', allowance: 15, pricePerCbm: 0, startingNumber: 1 },
+    { id: '2', allowance: 15, pricePerCbm: 0, startingNumber: 1 },
+    { id: '3', allowance: 15, pricePerCbm: 0, startingNumber: 1 },
   ],
 };
 

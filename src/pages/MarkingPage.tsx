@@ -82,10 +82,13 @@ export default function MarkingPage() {
   const isEditing = currentIndex >= 0 && currentIndex < blocks.length;
   const currentBlock = isEditing ? blocks[currentIndex] : null;
 
-  const sameTypeBlocks = blocks.filter(b => b.type === blockType);
+  const sameTypeBlocks = blocks.filter(b => String(b.type) === String(blockType));
+  const typePreset = inspection.header.blockTypes?.find(p => String(p.id) === String(blockType));
+  const startingNo = Number(typePreset?.startingNumber ?? inspection.header.startingBlockNumber ?? 1);
+
   const nextBlockNo = sameTypeBlocks.length === 0
-    ? inspection.header.startingBlockNumber
-    : Math.max(...sameTypeBlocks.map(b => b.blockNo)) + 1;
+    ? startingNo
+    : Math.max(...sameTypeBlocks.map(b => Number(b.blockNo))) + 1;
 
   const displayBlockNo = isEditing
     ? currentBlock!.blockNo
@@ -190,17 +193,18 @@ export default function MarkingPage() {
     setTimeout(() => setLastAdded(null), 2500);
   };
 
-  const confirmEditType = (allowance: number, pricePerCbm: number) => {
+  const confirmEditType = (allowance: number, pricePerCbm: number, startingNumber: number) => {
     const types = inspection.header.blockTypes || [];
     const exists = types.some(p => p.id === activeType);
     if (!exists) {
       // Adding a brand-new type
-      addBlockType({ id: activeType, allowance, pricePerCbm });
-      toast({ title: `Type T${activeType} Added`, description: `Allowance: ${allowance}cm, Price: ${pricePerCbm}` });
+      addBlockType({ id: activeType, allowance, pricePerCbm, startingNumber });
+      toast({ title: `Type T${activeType} Added`, description: `Allowance: ${allowance}cm, Price: ${pricePerCbm}, Start: #${startingNumber}` });
     } else {
       // Updating an existing type
-      updateBlockType({ id: activeType, allowance, pricePerCbm });
-      toast({ title: `Type T${activeType} Updated`, description: `Allowance: ${allowance}cm, Price: ${pricePerCbm}` });
+      updateBlockType({ id: activeType, allowance, pricePerCbm, startingNumber });
+      setBlockType(activeType); // Ensure numbering logic picks up the change
+      toast({ title: `Type T${activeType} Updated`, description: `Allowance: ${allowance}cm, Price: ${pricePerCbm}, Start: #${startingNumber}` });
     }
     setShowEditTypeModal(false);
   };
@@ -309,6 +313,7 @@ export default function MarkingPage() {
                     setShowEditTypeModal(true);
                   } else {
                     setActiveType(p.id);
+                    setBlockType(p.id);
                   }
                 }}
                 className={cn(
@@ -831,7 +836,7 @@ interface EditTypeModalProps {
   header: InspectionHeader;
   activeType: string;
   onClose: () => void;
-  onConfirm: (allowance: number, price: number) => void;
+  onConfirm: (allowance: number, price: number, startingNumber: number) => void;
 }
 
 function EditTypeModal({ header, activeType, onClose, onConfirm }: EditTypeModalProps) {
@@ -839,10 +844,11 @@ function EditTypeModal({ header, activeType, onClose, onConfirm }: EditTypeModal
   const isNew = !existingPreset;
   // For new types, pre-fill with the last type's values as a template
   const lastPreset = header.blockTypes[header.blockTypes.length - 1];
-  const preset = existingPreset || { allowance: lastPreset?.allowance || 15, pricePerCbm: lastPreset?.pricePerCbm || 0 };
+  const preset = existingPreset || { allowance: lastPreset?.allowance || 15, pricePerCbm: lastPreset?.pricePerCbm || 0, startingNumber: lastPreset?.startingNumber || 1 };
 
   const [allowance, setAllowance] = useState(String(preset.allowance));
-  const [price, setPrice] = useState(String(preset.pricePerCbm));
+  const [price, setPrice] = useState(String(preset.pricePerCbm || 0));
+  const [startingNumber, setStartingNumber] = useState(String(preset.startingNumber || 1));
 
 
   return (
@@ -882,6 +888,18 @@ function EditTypeModal({ header, activeType, onClose, onConfirm }: EditTypeModal
               className="h-14 text-2xl font-black tabular-nums bg-card border-2 border-primary/20 focus:border-primary"
             />
           </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground pl-1">
+              Starting Block Number
+            </Label>
+            <Input
+              type="number"
+              value={startingNumber}
+              onChange={(e) => setStartingNumber(e.target.value)}
+              className="h-14 text-2xl font-black tabular-nums bg-card border-2 border-primary/20 focus:border-primary"
+            />
+          </div>
         </div>
 
         <div className="p-6 pt-0 flex gap-3">
@@ -889,7 +907,7 @@ function EditTypeModal({ header, activeType, onClose, onConfirm }: EditTypeModal
             Cancel
           </Button>
           <Button 
-            onClick={() => onConfirm(parseFloat(allowance) || 0, parseFloat(price) || 0)}
+            onClick={() => onConfirm(parseFloat(allowance) || 0, parseFloat(price) || 0, parseInt(startingNumber) || 1)}
             className="flex-[2] h-14 rounded-2xl font-black uppercase tracking-wider shadow-lg shadow-primary/20"
           >
             {isNew ? `Add T${activeType}` : `Save T${activeType}`}

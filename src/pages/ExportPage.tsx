@@ -1185,6 +1185,17 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos, createdAt }: any) {
             </h1>
           </div>
 
+          {/* Type Legend Row */}
+          <div className="px-4 mb-6 flex gap-8 justify-center">
+            {(h.blockTypes || []).map((type: any) => (
+              <div key={type.id} className="text-[11pt] font-black uppercase text-[#1a365d] flex items-center gap-2">
+                <span className="bg-[#1a365d] text-white px-2 py-0.5 rounded text-[8pt]">TYPE {type.id}</span>
+                <span>=</span>
+                <span className="text-red-600 italic">{type.allowance} CM</span>
+              </div>
+            ))}
+          </div>
+
           {/* Abstract Table */}
           <div className="px-4 flex-1">
             <table style={{ width: '100%', borderCollapse: 'collapse', border: '2pt solid black' }}>
@@ -1208,7 +1219,6 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos, createdAt }: any) {
                       <td style={{ ...cellStyle, fontSize: '10pt' }}>{b.l1} × {b.l2} × {b.l3}</td>
                       <td style={{ ...cellStyle, fontSize: '10pt', color: '#be123c' }}>
                         <div>{allow} cm</div>
-                        <div style={{ fontSize: '7pt', color: '#64748b', fontWeight: 'bold', marginTop: '2px', textTransform: 'uppercase' }}>Type {b.type}</div>
                       </td>
                       <td style={{ ...cellStyle, fontSize: '10pt', fontWeight: '900' }}>{Number(b.netCbm || 0).toFixed(3)}</td>
                     </tr>

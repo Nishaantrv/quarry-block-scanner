@@ -29,7 +29,6 @@ export default function FinishDetailsPage() {
         const data = { ...formValues };
         const numericFields: (keyof InspectionHeader)[] = [
             'pricePerCbm',
-            'pricePerCbm',
             'startingBlockNumber'
         ];
 
@@ -61,7 +60,6 @@ export default function FinishDetailsPage() {
     const onSubmit = async (data: InspectionHeader) => {
         // Only convert numeric fields if they are present in the form data
         const numericFields: (keyof InspectionHeader)[] = [
-            'pricePerCbm',
             'pricePerCbm',
             'startingBlockNumber'
         ];
@@ -129,23 +127,23 @@ export default function FinishDetailsPage() {
                 </div>
             </header>
 
-            {/* Summary pill */}
-            <GlassContainer className="mb-6 p-4 grid grid-cols-2 sm:flex sm:items-center sm:justify-between gap-y-4 gap-x-2 bg-primary/5 border-primary/20">
-                <div className="text-center sm:text-left">
-                    <div className="text-[9px] sm:text-[10px] uppercase font-bold text-muted-foreground whitespace-nowrap">No of blocks</div>
-                    <div className="text-xl sm:text-2xl font-black text-primary">{totals.totalBlocks}</div>
+            {/* Summary pill - 2x2 Grid for alignment */}
+            <GlassContainer className="mb-6 p-4 grid grid-cols-2 gap-4 bg-primary/5 border-primary/20">
+                <div className="space-y-1">
+                    <div className="text-[10px] uppercase font-bold text-muted-foreground whitespace-nowrap">No of blocks</div>
+                    <div className="text-2xl font-black text-primary leading-none">{totals.totalBlocks}</div>
                 </div>
-                <div className="text-center sm:text-left">
-                    <div className="text-[9px] sm:text-[10px] uppercase font-bold text-muted-foreground whitespace-nowrap">Net measurement (cbm)</div>
-                    <div className="text-xl sm:text-2xl font-black text-primary">{totals.totalNetCbm.toFixed(3)}</div>
+                <div className="space-y-1">
+                    <div className="text-[10px] uppercase font-bold text-muted-foreground whitespace-nowrap">Net measurement (cbm)</div>
+                    <div className="text-2xl font-black text-primary leading-none">{totals.totalNetCbm.toFixed(3)}</div>
                 </div>
-                <div className="text-center sm:text-left">
-                    <div className="text-[9px] sm:text-[10px] uppercase font-bold text-muted-foreground whitespace-nowrap">Gross measurement (cbm)</div>
-                    <div className="text-xl sm:text-2xl font-black text-primary">{totals.totalGrossCbm.toFixed(3)}</div>
+                <div className="space-y-1">
+                    <div className="text-[10px] uppercase font-bold text-muted-foreground whitespace-nowrap">Gross measurement (cbm)</div>
+                    <div className="text-2xl font-black text-primary leading-none">{totals.totalGrossCbm.toFixed(3)}</div>
                 </div>
-                <div className="text-center sm:text-left">
-                    <div className="text-[9px] sm:text-[10px] uppercase font-bold text-muted-foreground whitespace-nowrap">Value ($)</div>
-                    <div className="text-xl sm:text-2xl font-black text-primary truncate">{totals.totalValue.toLocaleString()}</div>
+                <div className="space-y-1">
+                    <div className="text-[10px] uppercase font-bold text-muted-foreground whitespace-nowrap">Value ($)</div>
+                    <div className="text-2xl font-black text-primary truncate leading-none">{totals.totalValue.toLocaleString()}</div>
                 </div>
             </GlassContainer>
 

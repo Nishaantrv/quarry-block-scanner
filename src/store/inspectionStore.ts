@@ -215,8 +215,11 @@ export const useInspectionStore = create<InspectionStore>()(
         if (!activeInspection) return;
         const { header, blocks } = activeInspection;
         const sameTypeBlocks = blocks.filter(b => b.type === type);
+        const preset = header.blockTypes?.find(p => p.id === type);
+        const startingNo = preset?.startingNumber ?? header.startingBlockNumber ?? 1;
+        
         const blockNo = sameTypeBlocks.length === 0
-          ? header.startingBlockNumber
+          ? startingNo
           : Math.max(...sameTypeBlocks.map(b => b.blockNo)) + 1;
         const block = buildBlock(
           generateId(),
@@ -313,11 +316,15 @@ export const useInspectionStore = create<InspectionStore>()(
       updateHeader: (header) => {
         const { activeInspection } = get();
         if (!activeInspection) return;
-        // Re-number blocks from the new startingBlockNumber and recalculate CBM/value
+        
+        const startingNumberChanged = header.startingBlockNumber !== activeInspection.header.startingBlockNumber;
+
+        // Re-number blocks ONLY if the global startingBlockNumber changed
+        // Otherwise, just re-calculate derived values (CBM, value) from the new header settings
         const newBlocks = activeInspection.blocks.map((b, i) =>
           buildBlock(
             b.id,
-            header.startingBlockNumber + i,
+            startingNumberChanged ? header.startingBlockNumber + i : b.blockNo,
             b.l1,
             b.l2,
             b.l3,
@@ -327,7 +334,9 @@ export const useInspectionStore = create<InspectionStore>()(
             b.type || '1',
             b.pricePerCbm,
             b.photoUrl,
-            b.photoUrls
+            b.photoUrls,
+            b.photoRotations,
+            b.date
           )
         );
         set({
@@ -362,14 +371,42 @@ export const useInspectionStore = create<InspectionStore>()(
       updateBlockType: (preset) => {
         const { activeInspection } = get();
         if (!activeInspection) return;
+        
+        const oldPreset = activeInspection.header.blockTypes?.find(p => String(p.id) === String(preset.id));
+        const startingNumberChanged = oldPreset && preset.startingNumber !== undefined && Number(preset.startingNumber) !== Number(oldPreset.startingNumber);
+
         const updatedHeader = {
           ...activeInspection.header,
-          blockTypes: (activeInspection.header.blockTypes || []).map(p => p.id === preset.id ? preset : p)
+          blockTypes: (activeInspection.header.blockTypes || []).map(p => 
+            String(p.id) === String(preset.id) ? { ...p, ...preset } : p
+          )
         };
+
         // Re-calculate all blocks using this type
-        const newBlocks = activeInspection.blocks.map(b => 
-          b.type === preset.id ? buildBlock(b.id, b.blockNo, b.l1, b.l2, b.l3, updatedHeader, b.remarks, undefined, b.type, undefined, b.photoUrl, b.photoUrls) : b
-        );
+        let typeIndex = 0;
+        const newBlocks = activeInspection.blocks.map(b => {
+          if (String(b.type) !== String(preset.id)) return b;
+          
+          const newNo = startingNumberChanged 
+            ? (Number(preset.startingNumber) || 1) + typeIndex++ 
+            : b.blockNo;
+
+          return buildBlock(
+            b.id, 
+            newNo, 
+            b.l1, b.l2, b.l3, 
+            updatedHeader, 
+            b.remarks, 
+            undefined, // allowance
+            b.type, 
+            b.pricePerCbm,
+            b.photoUrl,
+            b.photoUrls,
+            b.photoRotations,
+            b.date
+          );
+        });
+
         set({
           activeInspection: {
             ...activeInspection,
