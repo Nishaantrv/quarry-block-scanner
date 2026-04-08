@@ -1327,18 +1327,18 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos }: any) {
               </div>
             </div>
 
-            {/* Photo Grid - Show all block photos */}
-            <div className="grid grid-cols-2 gap-4 mb-8 px-4">
+            {/* Photo List - Single column, fully viewable */}
+            <div className="grid grid-cols-1 gap-6 mb-8 px-4">
               {((b.photoUrls && b.photoUrls.length > 0) || b.photoUrl) ? (
                 <>
                   {[...(b.photoUrl ? [b.photoUrl] : []), ...(b.photoUrls || [])].map((url, pIdx) => (
-                    <div key={pIdx} className="border-2 border-black p-1 aspect-[4/3] bg-zinc-50 overflow-hidden shadow-sm">
-                       <img src={url} alt={`Block ${b.blockNo} - ${pIdx + 1}`} className="w-full h-full object-cover" />
+                    <div key={pIdx} className="border-2 border-black p-1 bg-zinc-50 shadow-sm">
+                       <img src={url} alt={`Block ${b.blockNo} - ${pIdx + 1}`} className="w-full h-auto object-contain block mx-auto" style={{ maxHeight: '400px' }} />
                     </div>
                   ))}
                 </>
               ) : (
-                <div className="col-span-2 h-48 border-[3px] border-dashed border-zinc-200 flex flex-col items-center justify-center text-zinc-300 font-bold uppercase text-xs italic gap-2">
+                <div className="h-48 border-[3px] border-dashed border-zinc-200 flex flex-col items-center justify-center text-zinc-300 font-bold uppercase text-xs italic gap-2">
                   <X className="h-8 w-8 opacity-20" />
                   No photos captured for Block {b.blockNo}
                 </div>
