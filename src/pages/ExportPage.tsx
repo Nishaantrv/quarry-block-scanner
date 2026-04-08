@@ -1196,40 +1196,60 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos, createdAt }: any) {
             ))}
           </div>
 
-          {/* Abstract Table */}
-          <div className="px-4 flex-1">
-            <table style={{ width: '100%', borderCollapse: 'collapse', border: '2pt solid black' }}>
-              <thead>
-                <tr style={{ background: '#1a365d', color: '#fff' }}>
-                  <th style={{ ...headerStyle, width: '10%', color: '#fff', background: '#1a365d' }}>SR NO</th>
-                  <th style={{ ...headerStyle, width: '20%', color: '#fff', background: '#1a365d' }}>BLOCK NO</th>
-                  <th style={{ ...headerStyle, width: '30%', color: '#fff', background: '#1a365d' }}>MEASUREMENT (CM)</th>
-                  <th style={{ ...headerStyle, width: '20%', color: '#fff', background: '#1a365d' }}>ALLW</th>
-                  <th style={{ ...headerStyle, width: '20%', color: '#fff', background: '#1a365d' }}>NET CBM</th>
-                </tr>
-              </thead>
-              <tbody>
-                {blocks.map((b: any, bIdx: number) => {
-                  const preset = h.blockTypes?.find((p: any) => p.id === b.type) || h.blockTypes?.[0];
-                  const allow = b.allowance !== undefined ? b.allowance : (preset?.allowance || 0);
-                  return (
-                    <tr key={b.id} style={{ background: bIdx % 2 === 0 ? '#fff' : '#f9fafb' }}>
-                      <td style={{ ...cellStyle, fontSize: '10pt' }}>{bIdx + 1}</td>
-                      <td style={{ ...cellStyle, fontSize: '10pt', fontWeight: 'bold' }}>{String(b.blockNo).padStart(3, '0')}</td>
-                      <td style={{ ...cellStyle, fontSize: '10pt' }}>{b.l1} × {b.l2} × {b.l3}</td>
-                      <td style={{ ...cellStyle, fontSize: '10pt', color: '#be123c' }}>
-                        <div>{allow} cm</div>
-                      </td>
-                      <td style={{ ...cellStyle, fontSize: '10pt', fontWeight: '900' }}>{Number(b.netCbm || 0).toFixed(3)}</td>
-                    </tr>
-                  );
-                })}
-                <tr style={{ background: '#f8fafc', fontWeight: 'bold', borderTop: '2pt solid black' }}>
-                  <td colSpan={4} style={{ ...cellStyle, textAlign: 'right', paddingRight: '20px' }}>TOTAL NO. OF BLOCKS: {blocks.length}</td>
-                  <td style={{ ...cellStyle, fontSize: '12pt' }}>{totalCbm.toFixed(3)} m³</td>
-                </tr>
-              </tbody>
-            </table>
+          {/* Abstract Tables by Type */}
+          <div className="px-4 flex-1 space-y-10">
+            {(h.blockTypes || []).map((typePreset: any) => {
+              // Group blocks by type
+              const typeBlocks = blocks.filter((b: any) => (b.type === typePreset.id || (!b.type && typePreset.id === '1')));
+              if (typeBlocks.length === 0) return null;
+              
+              const typeTotalCbm = typeBlocks.reduce((acc: any, b: any) => acc + (b.netCbm || 0), 0);
+              
+              return (
+                <div key={typePreset.id} className="space-y-3">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-[#1a365d] text-white px-4 py-1.5 font-black uppercase tracking-[0.2em] text-[10pt] border-2 border-black shadow-[4px_4px_0px_rgba(0,0,0,1)]">
+                      TYPE {typePreset.id} BLOCKS
+                    </div>
+                    <div className="h-[2pt] flex-1 bg-black"></div>
+                  </div>
+                  
+                  <table style={{ width: '100%', borderCollapse: 'collapse', border: '2pt solid black' }}>
+                    <thead>
+                      <tr style={{ background: '#1a365d', color: '#fff' }}>
+                        <th style={{ ...headerStyle, width: '10%', color: '#fff', background: '#1a365d' }}>SR NO</th>
+                        <th style={{ ...headerStyle, width: '20%', color: '#fff', background: '#1a365d' }}>BLOCK NO</th>
+                        <th style={{ ...headerStyle, width: '30%', color: '#fff', background: '#1a365d' }}>MEASUREMENT (CM)</th>
+                        <th style={{ ...headerStyle, width: '20%', color: '#fff', background: '#1a365d' }}>ALLW</th>
+                        <th style={{ ...headerStyle, width: '20%', color: '#fff', background: '#1a365d' }}>NET CBM</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {typeBlocks.map((b: any, bIdx: number) => {
+                        const allow = b.allowance !== undefined ? b.allowance : (typePreset?.allowance || 0);
+                        return (
+                          <tr key={b.id} style={{ background: bIdx % 2 === 0 ? '#fff' : '#f9fafb' }}>
+                            <td style={{ ...cellStyle, fontSize: '10pt' }}>{bIdx + 1}</td>
+                            <td style={{ ...cellStyle, fontSize: '10pt', fontWeight: 'bold' }}>{String(b.blockNo).padStart(3, '0')}</td>
+                            <td style={{ ...cellStyle, fontSize: '10pt' }}>{b.l1} × {b.l2} × {b.l3}</td>
+                            <td style={{ ...cellStyle, fontSize: '11pt', color: '#be123c', fontWeight: 'bold' }}>
+                              <div>{allow} cm</div>
+                            </td>
+                            <td style={{ ...cellStyle, fontSize: '11pt', fontWeight: '900' }}>{Number(b.netCbm || 0).toFixed(3)}</td>
+                          </tr>
+                        );
+                      })}
+                      <tr style={{ background: '#f1f5f9', fontWeight: '900', borderTop: '2.5pt solid black' }}>
+                        <td colSpan={4} style={{ ...cellStyle, textAlign: 'right', paddingRight: '24px', color: '#1a365d', textTransform: 'uppercase', fontSize: '10pt' }}>
+                          TYPE {typePreset.id} TOTAL ({String(typeBlocks.length).padStart(2, '0')} BLOCKS):
+                        </td>
+                        <td style={{ ...cellStyle, fontSize: '13pt', color: '#1a365d', background: '#e2e8f0' }}>{typeTotalCbm.toFixed(3)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
