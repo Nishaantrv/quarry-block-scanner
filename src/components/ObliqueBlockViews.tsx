@@ -192,7 +192,7 @@ export const ObliqueBlockViews: React.FC<Props> = React.memo(({ length, height, 
     const viewScale = 140 / (maxDim || 1);
 
     return (
-        <div className="w-full flex flex-wrap justify-center gap-6 py-4 bg-muted/10 rounded-lg border border-border/50">
+        <div className="w-full flex flex-wrap justify-center gap-6 py-4 bg-white print:bg-transparent rounded-lg border border-zinc-200 print:border-zinc-300">
             {/* View A: Mirror of View B (Front=WxH, Depth=L, Project Left) */}
             <SingleBlockView
                 title="View A"

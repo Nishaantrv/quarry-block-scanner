@@ -1430,6 +1430,11 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos, createdAt }: any) {
             <div className="bg-white text-black p-[5mm] shadow-[0_20px_50px_rgba(0,0,0,0.15)] w-[210mm] min-h-[297mm] relative overflow-hidden border border-zinc-100 print:shadow-none print:m-0 page-break flex flex-col items-center justify-center">
               <div className="border-[3pt] border-black w-full flex-1 bg-white p-4 flex flex-col">
 
+                {/* 3D Visualizer Diagrams */}
+                <div className="px-4 mb-4">
+                  <ObliqueBlockViews length={b.l1} height={b.l2} width={b.l3} />
+                </div>
+
                 {/* Measurement Table */}
                 <div className="px-4 mb-8">
                   <div className="bg-white border-2 border-black print:shadow-none shadow-xl overflow-hidden rounded-sm">
