@@ -22,6 +22,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useIsMobile } from '@/hooks/use-mobile';
+import { 
+  History, 
+  MapPin, 
+  Phone, 
+  Calendar,
+  Layers,
+  Maximize2,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw
+} from 'lucide-react';
 
 type DocType = 'gross-packing' | 'net-packing' | 'gross-invoice' | 'net-invoice' | 'normal-report' | 'abstract-report';
 
@@ -35,12 +47,26 @@ export default function ExportPage() {
 
   const [activeDoc, setActiveDoc] = React.useState<DocType>('normal-report');
   const printRef = useRef<HTMLDivElement>(null);
+  const printHiddenRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
+  const [zoom, setZoom] = React.useState(1);
 
   // Edit Mode State
   const [isEditing, setIsEditing] = React.useState(false);
   const [editedHeader, setEditedHeader] = React.useState<InspectionHeader | null>(null);
   const [editedProfile, setEditedProfile] = React.useState<CompanyProfile | null>(null);
   const [editedBlocks, setEditedBlocks] = React.useState<Block[]>([]);
+
+  useEffect(() => {
+    if (isMobile) {
+      // Calculate fit-to-width scale
+      const screenWidth = window.innerWidth - 32; // padding
+      const docWidth = activeDoc === 'abstract-report' ? 297 * 3.78 : 210 * 3.78; // mm to px approx
+      setZoom(Math.min(screenWidth / docWidth, 1));
+    } else {
+      setZoom(1);
+    }
+  }, [isMobile, activeDoc]);
 
   useEffect(() => {
     if (inspection) {
@@ -81,15 +107,16 @@ export default function ExportPage() {
   };
 
   const handlePrint = () => {
-    if (!printRef.current) return;
+    const targetRef = printHiddenRef.current || printRef.current;
+    if (!targetRef) return;
     const wasEditing = isEditing;
     if (wasEditing) setIsEditing(false);
 
     setTimeout(() => {
       const printWindow = window.open('', '_blank');
-      if (!printWindow || !printRef.current) return;
+      if (!printWindow || !targetRef) return;
 
-      const clone = printRef.current.cloneNode(true) as HTMLElement;
+      const clone = targetRef.cloneNode(true) as HTMLElement;
       clone.querySelectorAll('script').forEach((s) => s.remove());
       clone.querySelectorAll('[onerror],[onload],[onclick],[onmouseover]').forEach((el) => {
         el.removeAttribute('onerror');
@@ -229,7 +256,7 @@ export default function ExportPage() {
             {/* Preview on the right (hidden on mobile during edit if desired, or small) */}
             <div className="hidden lg:block border rounded-xl overflow-auto bg-zinc-900/50 p-4 shadow-inner">
                <div className="scale-[0.6] origin-top transform-gpu">
-                  <div ref={printRef} className={cn(
+                  <div className={cn(
                     "bg-white text-black p-[5mm] text-[8px] leading-tight mx-auto shadow-2xl",
                     activeDoc === 'abstract-report' ? "w-[297mm] min-h-[210mm]" : "w-[210mm] min-h-[297mm]"
                   )}>
@@ -248,28 +275,82 @@ export default function ExportPage() {
             </div>
           </div>
         ) : (
-          /* Normal Preview Mode */
-          <div className="overflow-auto flex justify-center">
-            <div className={cn("inline-block border shadow-lg p-2 transition-colors bg-zinc-500/10 rounded-xl")}>
-              <div ref={printRef} className={cn(
-                "bg-white text-black p-[5mm] text-[8px] leading-tight mx-auto shadow-sm print:shadow-none",
-                activeDoc === 'normal-report' ? "w-[297mm] min-h-[210mm]" : "w-[210mm] min-h-[297mm]"
-              )}>
-                  <PreviewContent 
-                    activeDoc={activeDoc} 
-                    cp={cp} 
-                    h={h} 
-                    blocks={blocks} 
-                    totals={totals} 
-                    blockRange={blockRange} 
-                    isEditing={false}
-                    inspectionPhotos={inspection?.header.inspectionPhotos}
-                  />
+          /* Normal Preview Mode - RESTORED & OPTIMIZED */
+          <div className="flex flex-col items-center gap-4">
+            {/* Zoom Controls for Mobile optimization */}
+            {isMobile && (
+              <div className="flex items-center gap-2 bg-card border rounded-full px-4 py-2 shadow-sm sticky top-[100px] z-30">
+                <Button variant="ghost" size="icon" onClick={() => setZoom(z => Math.max(z - 0.1, 0.2))} className="h-8 w-8">
+                  <ZoomOut className="h-4 w-4" />
+                </Button>
+                <span className="text-[10px] font-bold w-12 text-center uppercase tabular-nums">{Math.round(zoom * 100)}%</span>
+                <Button variant="ghost" size="icon" onClick={() => setZoom(z => Math.min(z + 0.1, 2))} className="h-8 w-8">
+                  <ZoomIn className="h-4 w-4" />
+                </Button>
+                <div className="w-px h-4 bg-border mx-1" />
+                <Button 
+                   variant="ghost" 
+                   size="icon" 
+                   onClick={() => {
+                      const screenWidth = window.innerWidth - 32;
+                      const docWidth = activeDoc === 'abstract-report' ? 297 * 3.78 : 210 * 3.78;
+                      setZoom(Math.min(screenWidth / docWidth, 1));
+                   }} 
+                   className="h-8 w-8"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+
+            <div className="w-full overflow-auto flex justify-center pb-20">
+              <div 
+                className={cn(
+                  "inline-block transition-transform origin-top transform-gpu",
+                )}
+                style={{ transform: `scale(${zoom})` }}
+              >
+                <div className={cn("border shadow-lg p-2 transition-colors bg-zinc-500/10 rounded-xl")}>
+                  <div ref={printRef} className={cn(
+                    "bg-white text-black p-[5mm] text-[8px] leading-tight mx-auto shadow-sm print:shadow-none",
+                    activeDoc === 'abstract-report' || activeDoc === 'normal-report' ? "w-[297mm] min-h-[210mm]" : "w-[210mm] min-h-[297mm]"
+                  )}>
+                      <PreviewContent 
+                        activeDoc={activeDoc} 
+                        cp={cp} 
+                        h={h} 
+                        blocks={blocks} 
+                        totals={totals} 
+                        blockRange={blockRange} 
+                        isEditing={false}
+                        inspectionPhotos={inspection?.header.inspectionPhotos}
+                      />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         )}
       </main>
+
+      {/* HIDDEN PRINTABLE CONTAINER - Always Paper Formatted */}
+      <div className="fixed -left-[10000px] -top-[10000px] pointer-events-none" aria-hidden="true">
+        <div ref={printHiddenRef} className={cn(
+          "bg-white text-black p-[5mm] text-[8px] leading-tight",
+          activeDoc === 'abstract-report' ? "w-[297mm]" : "w-[210mm]"
+        )}>
+          <PreviewContent 
+            activeDoc={activeDoc} 
+            cp={isEditing ? editedProfile : cp} 
+            h={isEditing ? editedHeader : h} 
+            blocks={isEditing ? editedBlocks : blocks} 
+            totals={isEditing ? calcTotals(editedBlocks) : totals} 
+            blockRange={blockRange} 
+            isEditing={false}
+            inspectionPhotos={inspection?.header.inspectionPhotos}
+          />
+        </div>
+      </div>
     </div>
   );
 }
@@ -904,11 +985,6 @@ function PackingListBody({ blocks, type, h, cp, totals }: { blocks: any[]; type:
                         <span>{b.l1}</span> x <span>{b.l2}</span> x <span>{b.l3}</span>
                       </div>
                     </div>
-                    {b.remarks && (
-                      <div className="text-[8px] italic text-zinc-500 pl-4">
-                        Rem: {b.remarks}
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
@@ -1330,5 +1406,6 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos }: any) {
     </div>
   );
 }
+
 
 
