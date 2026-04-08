@@ -1290,26 +1290,8 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos }: any) {
                </div>
             </div>
 
-            {/* Photo Grid - Show all block photos */}
-            <div className="grid grid-cols-2 gap-4 mb-8">
-              {((b.photoUrls && b.photoUrls.length > 0) || b.photoUrl) ? (
-                <>
-                  {[...(b.photoUrl ? [b.photoUrl] : []), ...(b.photoUrls || [])].map((url, pIdx) => (
-                    <div key={pIdx} className="border-2 border-black p-1 aspect-[4/3] bg-zinc-50 overflow-hidden shadow-sm">
-                       <img src={url} alt={`Block ${b.blockNo} - ${pIdx + 1}`} className="w-full h-full object-cover" />
-                    </div>
-                  ))}
-                </>
-              ) : (
-                <div className="col-span-2 h-48 border-[3px] border-dashed border-zinc-200 flex flex-col items-center justify-center text-zinc-300 font-bold uppercase text-xs italic gap-2">
-                  <X className="h-8 w-8 opacity-20" />
-                  No photos captured for Block {b.blockNo}
-                </div>
-              )}
-            </div>
-
             {/* Measurement Table */}
-            <div className="px-4">
+            <div className="px-4 mb-8">
               <div className="bg-white border-2 border-black shadow-xl overflow-hidden rounded-sm">
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
@@ -1344,6 +1326,24 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos }: any) {
                   </tbody>
                 </table>
               </div>
+            </div>
+
+            {/* Photo Grid - Show all block photos */}
+            <div className="grid grid-cols-2 gap-4 mb-8 px-4">
+              {((b.photoUrls && b.photoUrls.length > 0) || b.photoUrl) ? (
+                <>
+                  {[...(b.photoUrl ? [b.photoUrl] : []), ...(b.photoUrls || [])].map((url, pIdx) => (
+                    <div key={pIdx} className="border-2 border-black p-1 aspect-[4/3] bg-zinc-50 overflow-hidden shadow-sm">
+                       <img src={url} alt={`Block ${b.blockNo} - ${pIdx + 1}`} className="w-full h-full object-cover" />
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <div className="col-span-2 h-48 border-[3px] border-dashed border-zinc-200 flex flex-col items-center justify-center text-zinc-300 font-bold uppercase text-xs italic gap-2">
+                  <X className="h-8 w-8 opacity-20" />
+                  No photos captured for Block {b.blockNo}
+                </div>
+              )}
             </div>
 
             {b.remarks && (
