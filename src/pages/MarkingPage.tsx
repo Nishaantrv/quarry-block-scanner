@@ -5,7 +5,7 @@ import { SummaryBar } from '@/components/SummaryBar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Save, RotateCcw, ChevronLeft, ChevronRight, Camera, X, Settings, Edit3, Trash2, Maximize2, Move, Ruler, Info, AlertTriangle, Check, CheckCircle2, Circle, Plus, User, Ship, Wallet, Box } from 'lucide-react';
+import { ArrowLeft, Save, RotateCcw, ChevronLeft, ChevronRight, Camera, X, Settings, Edit3, Trash2, Maximize2, Move, Ruler, Info, AlertTriangle, Check, CheckCircle2, Circle, Plus, User, Ship, Wallet, Box, Images } from 'lucide-react';
 import { ObliqueBlockViews } from '@/components/ObliqueBlockViews';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -73,6 +73,7 @@ export default function MarkingPage() {
   }, [l1, l2, l3, remarks, blockType, currentIndex, inspection?.id]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const uploadPhoto = useInspectionStore((s) => s.uploadPhoto);
 
   if (!inspection) return null;
@@ -381,7 +382,7 @@ export default function MarkingPage() {
           </div>
 
           {/* Photo Actions */}
-          <div className="absolute bottom-4 right-4 z-20 flex gap-2">
+          <div className="absolute bottom-4 right-4 z-20 flex flex-col gap-2">
             <input
               type="file"
               accept="image/*"
@@ -390,20 +391,48 @@ export default function MarkingPage() {
               ref={fileInputRef}
               onChange={handlePhotoUpload}
             />
-            <Button
-              size="sm"
-              variant="secondary"
-              className="h-10 px-4 rounded-full bg-primary/90 text-primary-foreground hover:bg-primary border-none shadow-lg gap-2"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
-            >
-              {isUploading ? (
-                <div className="h-4 w-4 border-2 border-white/30 border-t-white animate-spin rounded-full" />
-              ) : (
-                <Camera className="w-4 h-4" />
-              )}
-              {photoUrls.length > 0 ? `ADD PHOTO (${photoUrls.length})` : 'ADD PHOTO'}
-            </Button>
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              ref={cameraInputRef}
+              onChange={handlePhotoUpload}
+            />
+            
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                className="h-10 w-10 p-0 rounded-full bg-background/80 backdrop-blur-md text-foreground hover:bg-background border border-border shadow-lg"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                title="Add from Gallery"
+              >
+                <Images className="w-4 h-4" />
+              </Button>
+              
+              <Button
+                size="sm"
+                variant="secondary"
+                className="h-10 px-4 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 border-none shadow-lg gap-2 font-bold"
+                onClick={() => cameraInputRef.current?.click()}
+                disabled={isUploading}
+              >
+                {isUploading ? (
+                  <div className="h-4 w-4 border-2 border-white/30 border-t-white animate-spin rounded-full" />
+                ) : (
+                  <Camera className="w-4 h-4" />
+                )}
+                TAKE PHOTO
+              </Button>
+            </div>
+            
+            {photoUrls.length > 0 && (
+              <div className="self-end bg-primary/20 backdrop-blur-md text-primary text-[10px] font-black px-2 py-0.5 rounded-full border border-primary/30">
+                {photoUrls.length} PHOTO{photoUrls.length !== 1 ? 'S' : ''}
+              </div>
+            )}
           </div>
         </GlassContainer>
 
@@ -442,21 +471,30 @@ export default function MarkingPage() {
               />
             </div>
 
-            {/* PHOTOS LIST BELOW REMARKS */}
+            {/* PHOTOS GRID BELOW REMARKS */}
             {photoUrls.length > 0 && (
-              <div className="space-y-1.5 px-1 pt-2 animate-in fade-in slide-in-from-bottom-2">
-                <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground pl-1">Photos ({photoUrls.length})</Label>
-                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+              <div className="space-y-2 px-1 pt-4 animate-in fade-in slide-in-from-bottom-2">
+                <div className="flex items-center justify-between pl-1">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Photos ({photoUrls.length})</Label>
+                  <button 
+                    onClick={() => setPhotoUrls([])}
+                    className="text-[9px] font-bold text-destructive uppercase hover:underline"
+                  >
+                    Clear All
+                  </button>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
                   {photoUrls.map((url, idx) => (
-                    <div key={idx} className="relative group/photo shrink-0">
+                    <div key={idx} className="relative aspect-square group/photo overflow-hidden rounded-xl border border-border bg-muted">
                       <img
                         src={url}
                         alt={`Block Photo ${idx + 1}`}
-                        className="h-24 w-24 object-cover rounded-xl border border-border transition-transform hover:scale-[1.02]"
+                        className="h-full w-full object-cover transition-transform group-hover/photo:scale-110"
                       />
+                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/photo:opacity-100 transition-opacity" />
                       <button
                         onClick={() => removePhoto(idx)}
-                        className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground rounded-full p-1 shadow-lg hover:scale-110 transition-transform z-20"
+                        className="absolute top-1 right-1 bg-destructive/90 text-destructive-foreground rounded-full p-1 shadow-lg hover:scale-110 transition-transform z-20"
                       >
                         <X className="h-3 w-3" />
                       </button>
