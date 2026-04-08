@@ -1182,6 +1182,9 @@ function PaginatedAbstract({ h, cp, blocks, createdAt, compactCellStyle, compact
     }
   });
 
+  const grandTotalCbm = blocks.reduce((acc: any, b: any) => acc + (b.netCbm || 0), 0);
+  items.push({ kind: 'grand-total', count: blocks.length, total: grandTotalCbm });
+
   const pages: any[][] = [];
   let currentPage: any[] = [];
   let linesCount = 0;
@@ -1253,7 +1256,7 @@ function PaginatedAbstract({ h, cp, blocks, createdAt, compactCellStyle, compact
             )}
 
             <div className="px-4 flex-1 space-y-4">
-              {renderPageTable(pageItems, compactCellStyle, compactHeaderStyle)}
+              {renderPageTable(pageItems, compactCellStyle, compactHeaderStyle, cp)}
             </div>
           </div>
         </div>
@@ -1262,7 +1265,7 @@ function PaginatedAbstract({ h, cp, blocks, createdAt, compactCellStyle, compact
   );
 }
 
-function renderPageTable(items: any[], compactCellStyle: any, compactHeaderStyle: any) {
+function renderPageTable(items: any[], compactCellStyle: any, compactHeaderStyle: any, cp: any) {
   const result: any[] = [];
   let currentTable: any[] = [];
   let currentPreset: any = null;
@@ -1293,6 +1296,39 @@ function renderPageTable(items: any[], compactCellStyle: any, compactHeaderStyle
           // Total only
           result.push(renderActualTable([], currentPreset, compactCellStyle, compactHeaderStyle, item));
        }
+    } else if (item.kind === 'grand-total') {
+       result.push(
+          <React.Fragment key={`grand-${idx}`}>
+            <div className="mt-8 pt-4 border-t-2 border-black">
+               <table style={{ width: '100%', borderCollapse: 'collapse', border: '3pt solid black' }}>
+                  <tbody>
+                     <tr style={{ background: '#1a365d', color: '#fff', fontSize: '14pt' }}>
+                        <td style={{ padding: '12px', fontWeight: '900', textAlign: 'right', width: '70%', textTransform: 'uppercase' }}>GRAND TOTAL ({String(item.count).padStart(2, '0')} BLOCKS):</td>
+                        <td style={{ padding: '12px', fontWeight: '900', textAlign: 'center', background: '#fff', color: '#1a365d', borderLeft: '3pt solid black' }}>{item.total.toFixed(3)} m³</td>
+                     </tr>
+                  </tbody>
+               </table>
+            </div>
+            
+            <div className="mt-12 pt-8" style={{ pageBreakInside: 'avoid' }}>
+              <div className="flex justify-between items-end px-4">
+                <div className="space-y-4">
+                   <p className="text-[10px] font-bold text-zinc-400 uppercase italic max-w-[400px]">
+                      * This report serves as an official inspection document generated via Dakshin Scanner App. 
+                      All measurements are net values after allowances.
+                   </p>
+                </div>
+                <div className="text-right">
+                  <div style={{ color: '#1a365d' }} className="font-black uppercase text-xl border-b-2 border-black pb-1 mb-4 flex flex-col items-end">
+                     <span className="text-[10px] text-zinc-400 font-bold mb-1">FOR</span>
+                     {cp.companyName}
+                  </div>
+                  <p className="font-black italic text-[10px] uppercase tracking-widest">Authorized Inspection Signatory</p>
+                </div>
+              </div>
+            </div>
+          </React.Fragment>
+       );
     }
   });
 
@@ -1436,15 +1472,6 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos, createdAt }: any) {
                   </div>
                 </div>
 
-                {/* 3D Visualizer - Centered below table */}
-                <div className="px-12 mb-8 opacity-80 scale-90">
-                  <ObliqueBlockViews 
-                    length={b.l1} 
-                    height={b.l2} 
-                    width={b.l3} 
-                  />
-                </div>
-
                 {/* Inspector Remarks - Always on the Table Sheet */}
                 <div className="mt-8 px-4 pb-8">
                   <div style={{ border: '2px solid #000', padding: '12px', backgroundColor: '#fafafa', position: 'relative', minHeight: '60px' }}>
@@ -1490,36 +1517,6 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos, createdAt }: any) {
           </React.Fragment>
         );
       })}
-
-      {/* Summary Page */}
-      <div className="bg-white text-black p-[5mm] shadow-[0_20px_50px_rgba(0,0,0,0.15)] w-[210mm] min-h-[297mm] border border-zinc-100 flex flex-col print:shadow-none print:m-0 page-break">
-        <div className="border-[3pt] border-black w-full flex-1 bg-white p-8 flex flex-col justify-end">
-        <div className="mt-12 pt-8 border-t-[3px] border-black" style={{ pageBreakInside: 'avoid' }}>
-          <div className="flex justify-between items-end px-4 font-serif">
-            <div className="space-y-2">
-               <div className="flex items-center gap-4">
-                  <div className="text-center bg-zinc-100 border border-black p-2 min-w-[100px]">
-                     <p className="text-[8px] font-bold uppercase text-zinc-500">Total Blocks</p>
-                     <p className="text-2xl font-black">{blocks.length}</p>
-                  </div>
-                  <div className="text-center bg-zinc-100 border border-black p-2 min-w-[150px]">
-                     <p className="text-[8px] font-bold uppercase text-zinc-500">Total CBM</p>
-                     <p className="text-2xl font-black text-green-700">{blocks.reduce((acc: any, b: any) => acc + (b.netCbm || 0), 0).toFixed(3)} m³</p>
-                  </div>
-               </div>
-               <p className="text-[9px] font-bold text-zinc-400 uppercase italic">* This report serves as an official inspection document generated via Dakshin Scanner App.</p>
-            </div>
-            <div className="text-right">
-              <div style={{ color: '#1a365d' }} className="font-black uppercase text-xl border-b-2 border-black pb-1 mb-4 flex flex-col items-end">
-                 <span className="text-[10px] text-zinc-400 font-bold mb-1">FOR</span>
-                 {cp.companyName}
-              </div>
-              <p className="font-black italic text-[10px] uppercase tracking-widest">Authorized Inspection Signatory</p>
-            </div>
-          </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
