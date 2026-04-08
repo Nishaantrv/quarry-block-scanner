@@ -189,9 +189,18 @@ export default function MarkingPage() {
   };
 
   const confirmEditType = (allowance: number, pricePerCbm: number) => {
-    updateBlockType({ id: activeType, allowance, pricePerCbm });
+    const types = inspection.header.blockTypes || [];
+    const exists = types.some(p => p.id === activeType);
+    if (!exists) {
+      // Adding a brand-new type
+      addBlockType({ id: activeType, allowance, pricePerCbm });
+      toast({ title: `Type T${activeType} Added`, description: `Allowance: ${allowance}cm, Price: ${pricePerCbm}` });
+    } else {
+      // Updating an existing type
+      updateBlockType({ id: activeType, allowance, pricePerCbm });
+      toast({ title: `Type T${activeType} Updated`, description: `Allowance: ${allowance}cm, Price: ${pricePerCbm}` });
+    }
     setShowEditTypeModal(false);
-    toast({ title: `Type T${activeType} Updated`, description: `Allowance: ${allowance}cm, Price: ${pricePerCbm}` });
   };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -270,7 +279,7 @@ export default function MarkingPage() {
         </div>
 
         {/* TYPE SWITCHER */}
-        <div className="flex-1 flex items-center justify-center gap-1.5 bg-card/50 border border-border p-0.5 rounded-full px-1 max-w-[220px]">
+        <div className="flex-1 flex items-center justify-center gap-1.5 bg-card/50 border border-border p-0.5 rounded-full px-1 max-w-[260px] overflow-hidden">
           <Button 
             size="icon" 
             variant="ghost" 
@@ -278,20 +287,15 @@ export default function MarkingPage() {
             onClick={() => {
               const types = inspection.header.blockTypes || [];
               const nextId = String(types.length + 1);
-              const lastType = types[types.length - 1];
-              addBlockType({ 
-                id: nextId, 
-                allowance: lastType?.allowance || 15, 
-                pricePerCbm: lastType?.pricePerCbm || 0 
-              });
+              // Pre-set the pending type id and open modal — type is NOT saved yet
               setActiveType(nextId);
-              toast({ title: `Type T${nextId} Added`, description: "Configure its allowance and price if needed." });
+              setShowEditTypeModal(true);
             }}
           >
             <Plus className="h-4 w-4" />
           </Button>
-          <div className="h-5 w-[1px] bg-border mx-0.5" />
-          <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+          <div className="h-5 w-[1px] bg-border mx-0.5 shrink-0" />
+          <div className="flex gap-1 overflow-x-auto scrollbar-hide overflow-y-hidden">
             {(inspection.header.blockTypes || []).map((p) => (
               <button
                 key={p.id}
@@ -301,7 +305,7 @@ export default function MarkingPage() {
                     setShowEditTypeModal(true);
                 }}
                 className={cn(
-                  "h-8 px-3 rounded-full text-[10px] font-black transition-all shrink-0 uppercase",
+                  "h-8 px-3 rounded-full text-[10px] font-black transition-all shrink-0 uppercase leading-none flex items-center justify-center",
                   activeType === p.id 
                     ? "bg-primary text-primary-foreground shadow-sm scale-105" 
                     : "text-muted-foreground hover:bg-muted"
@@ -779,7 +783,11 @@ interface EditTypeModalProps {
 }
 
 function EditTypeModal({ header, activeType, onClose, onConfirm }: EditTypeModalProps) {
-  const preset = header.blockTypes.find(p => p.id === activeType) || header.blockTypes[0];
+  const existingPreset = header.blockTypes.find(p => p.id === activeType);
+  const isNew = !existingPreset;
+  // For new types, pre-fill with the last type's values as a template
+  const lastPreset = header.blockTypes[header.blockTypes.length - 1];
+  const preset = existingPreset || { allowance: lastPreset?.allowance || 15, pricePerCbm: lastPreset?.pricePerCbm || 0 };
 
   const [allowance, setAllowance] = useState(String(preset.allowance));
   const [price, setPrice] = useState(String(preset.pricePerCbm));
@@ -792,8 +800,11 @@ function EditTypeModal({ header, activeType, onClose, onConfirm }: EditTypeModal
       <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-[70] bg-background rounded-3xl border border-border shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-10 duration-300 flex flex-col max-w-md mx-auto overflow-hidden">
         
         <div className="p-6 border-b border-border bg-muted/30">
-          <h2 className="text-xl font-black uppercase tracking-tight text-center">Setup Type {activeType}</h2>
-          <p className="text-xs text-muted-foreground text-center mt-1">Configure allowance and price for this preset</p>
+          <div className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider mb-2", isNew ? "bg-primary/10 text-primary" : "bg-amber-500/10 text-amber-600")}>
+            {isNew ? '+ New Type' : 'Edit Type'}
+          </div>
+          <h2 className="text-xl font-black uppercase tracking-tight">Type T{activeType}</h2>
+          <p className="text-xs text-muted-foreground mt-1">{isNew ? 'Set the allowance and price for this new preset' : 'Update allowance and price for this preset'}</p>
         </div>
 
         <div className="p-6 space-y-5">
@@ -839,7 +850,7 @@ function EditTypeModal({ header, activeType, onClose, onConfirm }: EditTypeModal
             onClick={() => onConfirm(parseFloat(allowance) || 0, parseFloat(price) || 0)}
             className="flex-[2] h-14 rounded-2xl font-black uppercase tracking-wider shadow-lg shadow-primary/20"
           >
-            Save Preset {activeType}
+            {isNew ? `Add T${activeType}` : `Save T${activeType}`}
           </Button>
         </div>
       </div>
