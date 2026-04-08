@@ -34,6 +34,7 @@ import {
   ZoomOut,
   RotateCcw
 } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast";
 
 type DocType = 'gross-packing' | 'net-packing' | 'gross-invoice' | 'net-invoice' | 'normal-report' | 'abstract-report';
 
@@ -44,6 +45,7 @@ export default function ExportPage() {
   const updateHeader = useInspectionStore((s) => s.updateHeader);
   const setCompanyProfile = useInspectionStore((s) => s.setCompanyProfile);
   const updateBlocks = useInspectionStore((s) => s.updateBlocks);
+  const { toast } = useToast();
 
   const [activeDoc, setActiveDoc] = React.useState<DocType>('normal-report');
   const printRef = useRef<HTMLDivElement>(null);
@@ -107,57 +109,68 @@ export default function ExportPage() {
   };
 
   const handlePrint = () => {
-    const targetRef = printHiddenRef.current || printRef.current;
-    if (!targetRef) return;
-    const wasEditing = isEditing;
-    if (wasEditing) setIsEditing(false);
+    const content = printHiddenRef.current;
+    if (!content) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast({ title: "Pop-up Blocked", description: "Please allow pop-ups to share as PDF", variant: "destructive" });
+      return;
+    }
+
+    const doc = printWindow.document;
+    const clone = content.cloneNode(true) as HTMLDivElement;
+    
+    // Switch orientation based on doc type
+    const isLandscape = activeDoc === 'abstract-report';
+    const paperWidth = isLandscape ? '297mm' : '210mm';
+
+    const printStyles = `
+      @page { 
+        size: ${isLandscape ? 'A4 landscape' : 'A4 portrait'}; 
+        margin: 0; 
+      }
+      body { 
+        margin: 0; 
+        padding: 0; 
+        background: white; 
+        -webkit-print-color-adjust: exact; 
+        print-color-adjust: exact;
+      }
+      .print-wrapper {
+        width: ${paperWidth};
+        margin: 0 auto;
+        background: white;
+      }
+      ${Array.from(document.styleSheets)
+        .map(sheet => {
+          try {
+            return Array.from(sheet.cssRules).map(rule => rule.cssText).join('\n');
+          } catch (e) {
+            return '';
+          }
+        })
+        .join('\n')}
+    `;
+
+    const style = doc.createElement('style');
+    style.textContent = printStyles;
+    doc.head.appendChild(style);
+    
+    // Force some styles on the clone to ensure it fits the paper
+    clone.style.width = paperWidth;
+    clone.style.margin = '0';
+    clone.style.boxShadow = 'none';
+
+    const wrapper = doc.createElement('div');
+    wrapper.className = 'print-wrapper';
+    wrapper.appendChild(doc.adoptNode(clone));
+    doc.body.appendChild(wrapper);
 
     setTimeout(() => {
-      const printWindow = window.open('', '_blank');
-      if (!printWindow || !targetRef) return;
-
-      const clone = targetRef.cloneNode(true) as HTMLElement;
-      clone.querySelectorAll('script').forEach((s) => s.remove());
-      clone.querySelectorAll('[onerror],[onload],[onclick],[onmouseover]').forEach((el) => {
-        el.removeAttribute('onerror');
-        el.removeAttribute('onload');
-        el.removeAttribute('onclick');
-        el.removeAttribute('onmouseover');
-      });
-
-      const printStyles = `
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: 'Arial', sans-serif; font-size: 8px; background: white; color: black; padding: 5mm; }
-          table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-          th, td { border: 1px solid #000; padding: 2px 3px; text-align: left; vertical-align: middle; word-wrap: break-word; overflow: hidden; }
-          th { background: #f0f0f0; font-weight: bold; text-transform: uppercase; text-align: center; font-size: 8px; }
-          .text-right { text-align: right; }
-          .text-center { text-align: center; }
-          .text-red { color: #dc2626; }
-          .text-green { color: #16a34a; }
-          .font-bold { font-weight: bold; }
-          @media print {
-              @page { margin: 0; size: A4 landscape; }
-              body { margin: 5mm; -webkit-print-color-adjust: exact; }
-          }`;
-
-      const doc = printWindow.document;
-      doc.open();
-      doc.write('<!DOCTYPE html><html><head></head><body></body></html>');
-      doc.close();
-      doc.title = `Print ${activeDoc}`;
-      const style = doc.createElement('style');
-      style.textContent = printStyles;
-      doc.head.appendChild(style);
-      doc.body.appendChild(doc.adoptNode(clone));
-
-      if (wasEditing) setIsEditing(true);
-
-      setTimeout(() => {
-        printWindow.focus();
-        printWindow.print();
-      }, 250);
-    }, 100);
+      printWindow.focus();
+      printWindow.print();
+    }, 500);
   };
 
   const docs: { key: DocType; label: string }[] = [
@@ -313,7 +326,7 @@ export default function ExportPage() {
                 <div className={cn("border shadow-lg p-2 transition-colors bg-zinc-500/10 rounded-xl")}>
                   <div ref={printRef} className={cn(
                     "bg-white text-black p-[5mm] text-[8px] leading-tight mx-auto shadow-sm print:shadow-none",
-                    activeDoc === 'abstract-report' || activeDoc === 'normal-report' ? "w-[297mm] min-h-[210mm]" : "w-[210mm] min-h-[297mm]"
+                    activeDoc === 'abstract-report' ? "w-[297mm] min-h-[210mm]" : "w-[210mm] min-h-[297mm]"
                   )}>
                       <PreviewContent 
                         activeDoc={activeDoc} 
