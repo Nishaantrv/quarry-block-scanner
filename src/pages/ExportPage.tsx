@@ -1168,8 +1168,8 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos, createdAt }: any) {
   return (
     <div className="flex flex-col items-center gap-12 py-12">
       {/* PAGE 1: SUMMARY ABSTRACT SHEET */}
-      <div className="bg-white text-black p-[15mm] shadow-[0_20px_50px_rgba(0,0,0,0.15)] w-[210mm] min-h-[297mm] relative overflow-hidden border-[3pt] border-black print:shadow-none print:m-0 page-break flex flex-col justify-center">
-        <div className="p-4 bg-white h-auto flex flex-col">
+      <div className="bg-white text-black p-[5mm] shadow-[0_20px_50px_rgba(0,0,0,0.15)] w-[210mm] min-h-[297mm] relative overflow-hidden border border-zinc-100 print:shadow-none print:m-0 page-break flex flex-col items-center justify-start pt-10">
+        <div className="border-[3pt] border-black w-full flex-1 bg-white p-4 flex flex-col">
           {/* Header */}
           <div className="flex justify-end mb-2">
             <div className="text-[10pt] font-black uppercase tracking-widest text-[#1a365d]">
@@ -1206,7 +1206,10 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos, createdAt }: any) {
                       <td style={{ ...cellStyle, fontSize: '10pt' }}>{bIdx + 1}</td>
                       <td style={{ ...cellStyle, fontSize: '10pt', fontWeight: 'bold' }}>{String(b.blockNo).padStart(3, '0')}</td>
                       <td style={{ ...cellStyle, fontSize: '10pt' }}>{b.l1} × {b.l2} × {b.l3}</td>
-                      <td style={{ ...cellStyle, fontSize: '10pt', color: '#be123c' }}>{allow} cm</td>
+                      <td style={{ ...cellStyle, fontSize: '10pt', color: '#be123c' }}>
+                        <div>{allow} cm</div>
+                        <div style={{ fontSize: '7pt', color: '#64748b', fontWeight: 'bold', marginTop: '2px', textTransform: 'uppercase' }}>Type {b.type}</div>
+                      </td>
                       <td style={{ ...cellStyle, fontSize: '10pt', fontWeight: '900' }}>{Number(b.netCbm || 0).toFixed(3)}</td>
                     </tr>
                   );
@@ -1228,8 +1231,8 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos, createdAt }: any) {
         return (
           <React.Fragment key={b.id}>
             {/* SHEET 1: HEADER (if first) + TABLE + REMARKS */}
-            <div className="bg-white text-black p-[15mm] shadow-[0_20px_50px_rgba(0,0,0,0.15)] w-[210mm] min-h-[297mm] relative overflow-hidden border-[3pt] border-black print:shadow-none print:m-0 page-break flex flex-col justify-center">
-              <div className="p-4 bg-white h-auto flex flex-col">
+            <div className="bg-white text-black p-[5mm] shadow-[0_20px_50px_rgba(0,0,0,0.15)] w-[210mm] min-h-[297mm] relative overflow-hidden border border-zinc-100 print:shadow-none print:m-0 page-break flex flex-col items-center justify-center">
+              <div className="border-[3pt] border-black w-full flex-1 bg-white p-4 flex flex-col">
 
                 {/* Measurement Table */}
                 <div className="px-4 mb-8">
@@ -1291,16 +1294,17 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos, createdAt }: any) {
                     </div>
                   </div>
                 </div>
-              </div>
             </div>
+          </div>
+
 
             {/* SUBSEQUENT SHEETS: INDIVIDUAL PHOTOS */}
             {photos.map((url, pIdx) => (
               <div 
                 key={`${b.id}-photo-${pIdx}`} 
-                className="bg-white text-black p-[15mm] shadow-[0_20px_50px_rgba(0,0,0,0.15)] w-[210mm] min-h-[297mm] relative overflow-hidden border-[3pt] border-black print:shadow-none print:m-0 page-break flex flex-col justify-center items-center"
+                className="bg-white text-black p-[5mm] shadow-[0_20px_50px_rgba(0,0,0,0.15)] w-[210mm] min-h-[297mm] relative overflow-hidden border border-zinc-100 print:shadow-none print:m-0 page-break flex flex-col items-center justify-center"
               >
-                <div className="p-8 bg-white h-auto w-full flex flex-col items-center">
+                <div className="border-[3pt] border-black w-full flex-1 bg-white p-8 flex flex-col items-center">
                    <div className="text-xl font-black uppercase text-red-600 tracking-[0.2em] border-b-2 border-red-200 pb-2 mb-12 text-center w-full">
                      BLOCK NO : {b.blockNo}/{String.fromCharCode(65 + pIdx)} SIDE
                    </div>
@@ -1328,7 +1332,8 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos, createdAt }: any) {
       })}
 
       {/* Summary Page */}
-      <div className="bg-white text-black p-[15mm] shadow-[0_20px_50px_rgba(0,0,0,0.15)] w-[210mm] min-h-[297mm] flex flex-col justify-end border-[3pt] border-black print:shadow-none print:m-0 page-break">
+      <div className="bg-white text-black p-[5mm] shadow-[0_20px_50px_rgba(0,0,0,0.15)] w-[210mm] min-h-[297mm] border border-zinc-100 flex flex-col print:shadow-none print:m-0 page-break">
+        <div className="border-[3pt] border-black w-full flex-1 bg-white p-8 flex flex-col justify-end">
         <div className="mt-12 pt-8 border-t-[3px] border-black" style={{ pageBreakInside: 'avoid' }}>
           <div className="flex justify-between items-end px-4 font-serif">
             <div className="space-y-2">
@@ -1351,6 +1356,7 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos, createdAt }: any) {
               </div>
               <p className="font-black italic text-[10px] uppercase tracking-widest">Authorized Inspection Signatory</p>
             </div>
+          </div>
           </div>
         </div>
       </div>
