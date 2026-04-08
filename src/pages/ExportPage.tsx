@@ -188,10 +188,34 @@ export default function ExportPage() {
 
   const h = isEditing && editedHeader ? editedHeader : inspection.header;
   const cp = isEditing && editedProfile ? editedProfile : companyProfile;
+  
+  // Create a sorted list of blocks specifically for reports (Type 1 first, then Type 2, etc.)
+  const reportBlocks = React.useMemo(() => {
+    const raw = isEditing ? editedBlocks : inspection.blocks;
+    if (!raw || raw.length === 0) return [];
+    
+    return [...raw].sort((a, b) => {
+      const typeA = a.type || '1';
+      const typeB = b.type || '1';
+      
+      // Sort by type order as defined in blockTypes
+      const orderA = h.blockTypes?.findIndex((t: any) => t.id === typeA) ?? 0;
+      const orderB = h.blockTypes?.findIndex((t: any) => t.id === typeB) ?? 0;
+      
+      if (orderA !== orderB) return orderA - orderB;
+      
+      // Within same type, sort by block number
+      return (Number(a.blockNo) || 0) - (Number(b.blockNo) || 0);
+    });
+  }, [isEditing, editedBlocks, inspection.blocks, h.blockTypes]);
+
   const blocks = inspection.blocks;
-  const totals = inspection.totals;
-  const blockRange = blocks.length > 0
-    ? `${String(blocks[0].blockNo).padStart(3, '0')} TO ${String(blocks[blocks.length - 1].blockNo).padStart(3, '0')}`
+  const totals = isEditing ? calcTotals(editedBlocks) : inspection.totals;
+  
+  const minBlockNo = Math.min(...(isEditing ? editedBlocks : blocks).map(b => Number(b.blockNo) || 0));
+  const maxBlockNo = Math.max(...(isEditing ? editedBlocks : blocks).map(b => Number(b.blockNo) || 0));
+  const blockRange = (isEditing ? editedBlocks : blocks).length > 0
+    ? `${String(minBlockNo).padStart(3, '0')} TO ${String(maxBlockNo).padStart(3, '0')}`
     : '';
 
   return (
@@ -281,7 +305,7 @@ export default function ExportPage() {
                       activeDoc={activeDoc} 
                       cp={editedProfile!} 
                       h={editedHeader!} 
-                      blocks={editedBlocks} 
+                      blocks={reportBlocks} 
                       totals={calcTotals(editedBlocks)} 
                       blockRange={blockRange} 
                       isEditing={true}
@@ -332,7 +356,7 @@ export default function ExportPage() {
                     activeDoc={activeDoc} 
                     cp={cp} 
                     h={h} 
-                    blocks={blocks} 
+                    blocks={reportBlocks} 
                     totals={totals} 
                     blockRange={blockRange} 
                     isEditing={false}
@@ -353,7 +377,7 @@ export default function ExportPage() {
             activeDoc={activeDoc} 
             cp={isEditing ? editedProfile : cp} 
             h={isEditing ? editedHeader : h} 
-            blocks={isEditing ? editedBlocks : blocks} 
+            blocks={reportBlocks} 
             totals={isEditing ? calcTotals(editedBlocks) : totals} 
             blockRange={blockRange} 
             isEditing={false}
@@ -1144,6 +1168,179 @@ function InvoiceBody({ blocks, type, h, cp, totals, blockRange }: { blocks: any[
   );
 }
 
+function PaginatedAbstract({ h, cp, blocks, createdAt, compactCellStyle, compactHeaderStyle }: any) {
+  const items: any[] = [];
+  h.blockTypes?.forEach((typePreset: any) => {
+    const typeBlocks = blocks.filter((b: any) => (b.type === typePreset.id || (!b.type && typePreset.id === '1')));
+    if (typeBlocks.length > 0) {
+      const typeTotalCbm = typeBlocks.reduce((acc: any, b: any) => acc + (b.netCbm || 0), 0);
+      items.push({ kind: 'type-title', preset: typePreset });
+      typeBlocks.forEach((b: any, bIdx: number) => {
+        items.push({ kind: 'row', block: b, bIdx, preset: typePreset });
+      });
+      items.push({ kind: 'type-total', preset: typePreset, count: typeBlocks.length, total: typeTotalCbm });
+    }
+  });
+
+  const pages: any[][] = [];
+  let currentPage: any[] = [];
+  let linesCount = 0;
+  const FIRST_PAGE_MAX = 18;
+  const OTHER_PAGE_MAX = 28;
+
+  items.forEach((item) => {
+    let cost = 1;
+    if (item.kind === 'type-title') cost = 3; // Title + Table Header
+    if (item.kind === 'type-total') cost = 2;
+
+    const limit = pages.length === 0 ? FIRST_PAGE_MAX : OTHER_PAGE_MAX;
+
+    if (linesCount + cost > limit) {
+      pages.push(currentPage);
+      currentPage = [];
+      linesCount = 0;
+      // If we split a table, we should re-add the header on the next page
+      if (item.kind === 'row') {
+        currentPage.push({ kind: 'type-title-cont', preset: item.preset });
+        linesCount += 2;
+      }
+    }
+    
+    currentPage.push(item);
+    linesCount += cost;
+  });
+  if (currentPage.length > 0) pages.push(currentPage);
+
+  return (
+    <>
+      {pages.map((pageItems, pIdx) => (
+        <div key={pIdx} className="bg-white text-black p-[5mm] shadow-[0_20px_50px_rgba(0,0,0,0.15)] w-[210mm] min-h-[297mm] relative border border-zinc-100 print:shadow-none print:m-0 page-break flex flex-col items-center justify-start pt-2">
+          <div className="border-[3pt] border-black w-full flex-1 bg-white p-4 flex flex-col">
+            {/* Header only on first page */}
+            {pIdx === 0 && (
+              <>
+                <div className="flex justify-end mb-2">
+                  <div className="text-[10pt] font-black uppercase tracking-widest text-[#1a365d]">
+                    DATE: {createdAt ? new Date(createdAt).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB')}
+                  </div>
+                </div>
+                
+                <div className="flex flex-col items-center border-b-[3pt] border-black pb-4 mb-6 text-center">
+                  <h2 className="text-[20pt] font-[1000] uppercase tracking-[0.15em] text-[#1a365d] mb-1">DAKSHIN EXPORTS</h2>
+                  <h3 className="text-[9pt] font-black uppercase tracking-[0.3em] text-zinc-400 mb-3">{cp.companyName}</h3>
+                  <h1 className="text-2xl font-[1000] text-black leading-none uppercase tracking-tighter">
+                    Inspection Report - Abstract
+                  </h1>
+                </div>
+
+                <div className="px-4 mb-4 flex gap-6 justify-center flex-wrap">
+                  {(h.blockTypes || []).map((type: any) => (
+                    <div key={type.id} className="text-[10pt] font-black uppercase text-[#1a365d] flex items-center gap-2">
+                      <span className="bg-[#1a365d] text-white px-2 py-0.5 rounded text-[7pt]">{type.name || `TYPE ${type.id}`}</span>
+                      <span>=</span>
+                      <span className="text-red-600 italic">{type.allowance} CM</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {pIdx > 0 && (
+               <div className="flex justify-between items-center border-b-2 border-zinc-100 pb-2 mb-4">
+                  <span className="text-[10pt] font-black text-[#1a365d] uppercase tracking-widest">Inspection Report - Abstract (Cont.)</span>
+                  <span className="text-[8pt] font-bold text-zinc-400">PAGE {pIdx + 1}</span>
+               </div>
+            )}
+
+            <div className="px-4 flex-1 space-y-4">
+              {renderPageTable(pageItems, compactCellStyle, compactHeaderStyle)}
+            </div>
+          </div>
+        </div>
+      ))}
+    </>
+  );
+}
+
+function renderPageTable(items: any[], compactCellStyle: any, compactHeaderStyle: any) {
+  const result: any[] = [];
+  let currentTable: any[] = [];
+  let currentPreset: any = null;
+
+  items.forEach((item, idx) => {
+    if (item.kind === 'type-title' || item.kind === 'type-title-cont') {
+       if (currentTable.length > 0) {
+          result.push(renderActualTable(currentTable, currentPreset, compactCellStyle, compactHeaderStyle));
+          currentTable = [];
+       }
+       result.push(
+          <div key={`title-${idx}`} className="flex items-center gap-4 mt-6 first:mt-0 mb-2">
+            <div className="bg-[#1a365d] text-white px-4 py-1.5 font-black uppercase tracking-[0.2em] text-[10pt] border-2 border-black shadow-[4px_4px_0px_rgba(0,0,0,1)]">
+              {(item.preset.name || `TYPE ${item.preset.id}`).toUpperCase()} BLOCKS {item.kind === 'type-title-cont' && '(CONT.)'}
+            </div>
+            <div className="h-[2pt] flex-1 bg-black"></div>
+          </div>
+       );
+       currentPreset = item.preset;
+    } else if (item.kind === 'row') {
+       currentTable.push(item);
+       currentPreset = item.preset;
+    } else if (item.kind === 'type-total') {
+       if (currentTable.length > 0) {
+          result.push(renderActualTable(currentTable, currentPreset, compactCellStyle, compactHeaderStyle, item));
+          currentTable = [];
+       } else {
+          // Total only
+          result.push(renderActualTable([], currentPreset, compactCellStyle, compactHeaderStyle, item));
+       }
+    }
+  });
+
+  if (currentTable.length > 0) {
+     result.push(renderActualTable(currentTable, currentPreset, compactCellStyle, compactHeaderStyle));
+  }
+
+  return result;
+}
+
+function renderActualTable(rows: any[], preset: any, compactCellStyle: any, compactHeaderStyle: any, totalItem?: any) {
+   return (
+    <table key={preset?.id + (rows[0]?.kind || '')} style={{ width: '100%', borderCollapse: 'collapse', border: '2pt solid black' }} className="mb-4">
+      <thead>
+        <tr style={{ background: '#1a365d', color: '#fff' }}>
+          <th style={{ ...compactHeaderStyle, width: '10%', color: '#fff', background: '#1a365d' }}>SR NO</th>
+          <th style={{ ...compactHeaderStyle, width: '20%', color: '#fff', background: '#1a365d' }}>BLOCK NO</th>
+          <th style={{ ...compactHeaderStyle, width: '30%', color: '#fff', background: '#1a365d' }}>NET MEASUREMENT (CM)</th>
+          <th style={{ ...compactHeaderStyle, width: '20%', color: '#fff', background: '#1a365d' }}>ALLOWANCE</th>
+          <th style={{ ...compactHeaderStyle, width: '20%', color: '#fff', background: '#1a365d' }}>NET CBM</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r, idx) => {
+          const allow = r.block.allowance !== undefined ? r.block.allowance : (r.preset?.allowance || 0);
+          return (
+            <tr key={r.block.id} style={{ background: r.bIdx % 2 === 0 ? '#fff' : '#f9fafb' }}>
+              <td style={{ ...compactCellStyle }}>{r.bIdx + 1}</td>
+              <td style={{ ...compactCellStyle, fontWeight: 'bold' }}>{String(r.block.blockNo).padStart(3, '0')}</td>
+              <td style={{ ...compactCellStyle }}>{Math.max(r.block.l1 - allow, 0)} × {Math.max(r.block.l2 - allow, 0)} × {Math.max(r.block.l3 - allow, 0)}</td>
+              <td style={{ ...compactCellStyle, color: '#be123c', fontWeight: 'bold' }}>{allow} cm</td>
+              <td style={{ ...compactCellStyle, fontWeight: '900' }}>{Number(r.block.netCbm || 0).toFixed(3)}</td>
+            </tr>
+          );
+        })}
+        {totalItem && (
+          <tr style={{ background: '#f1f5f9', fontWeight: '900', borderTop: '2.5pt solid black' }}>
+            <td colSpan={4} style={{ ...compactCellStyle, textAlign: 'right', paddingRight: '24px', color: '#1a365d', textTransform: 'uppercase' }}>
+              {totalItem.preset.name || `TYPE ${totalItem.preset.id}`} TOTAL ({String(totalItem.count).padStart(2, '0')} BLOCKS):
+            </td>
+            <td style={{ ...compactCellStyle, fontSize: '11pt', color: '#1a365d', background: '#e2e8f0' }}>{totalItem.total.toFixed(3)}</td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+   );
+}
+
 function NormalReportBody({ blocks, cp, h, inspectionPhotos, createdAt }: any) {
   const cellStyle = { 
     border: '1.5pt solid #333', 
@@ -1152,6 +1349,11 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos, createdAt }: any) {
     textAlign: 'center' as const, 
     fontSize: '11pt',
     color: '#000'
+  };
+  const compactCellStyle = {
+    ...cellStyle,
+    padding: '4px 6px',
+    fontSize: '9.5pt'
   };
   const headerStyle = { 
     ...cellStyle, 
@@ -1162,97 +1364,25 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos, createdAt }: any) {
     letterSpacing: '0.1em',
     color: '#0369a1'
   };
+  const compactHeaderStyle = {
+    ...headerStyle,
+    padding: '6px 4px',
+    fontSize: '8pt'
+  };
 
   const totalCbm = blocks.reduce((acc: any, b: any) => acc + (b.netCbm || 0), 0);
 
   return (
     <div className="flex flex-col items-center gap-12 py-12">
-      {/* PAGE 1: SUMMARY ABSTRACT SHEET */}
-      <div className="bg-white text-black p-[5mm] shadow-[0_20px_50px_rgba(0,0,0,0.15)] w-[210mm] min-h-[297mm] relative overflow-hidden border border-zinc-100 print:shadow-none print:m-0 page-break flex flex-col items-center justify-start pt-10">
-        <div className="border-[3pt] border-black w-full flex-1 bg-white p-4 flex flex-col">
-          {/* Header */}
-          <div className="flex justify-end mb-2">
-            <div className="text-[10pt] font-black uppercase tracking-widest text-[#1a365d]">
-              DATE: {createdAt ? new Date(createdAt).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB')}
-            </div>
-          </div>
-          
-          <div className="flex flex-col items-center border-b-[3pt] border-black pb-8 mb-10 text-center">
-            <h2 className="text-[24pt] font-[1000] uppercase tracking-[0.15em] text-[#1a365d] mb-4">DAKSHIN EXPORTS</h2>
-            <h3 className="text-[10pt] font-black uppercase tracking-[0.3em] text-zinc-400 mb-6">{cp.companyName}</h3>
-            <h1 className="text-3xl font-[1000] text-black leading-none uppercase tracking-tighter">
-              Inspection Report - Abstract
-            </h1>
-          </div>
-
-          {/* Type Legend Row */}
-          <div className="px-4 mb-6 flex gap-8 justify-center">
-            {(h.blockTypes || []).map((type: any) => (
-              <div key={type.id} className="text-[11pt] font-black uppercase text-[#1a365d] flex items-center gap-2">
-                <span className="bg-[#1a365d] text-white px-2 py-0.5 rounded text-[8pt]">{type.name || `TYPE ${type.id}`}</span>
-                <span>=</span>
-                <span className="text-red-600 italic">{type.allowance} CM</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Abstract Tables by Type */}
-          <div className="px-4 flex-1 space-y-10">
-            {(h.blockTypes || []).map((typePreset: any) => {
-              // Group blocks by type
-              const typeBlocks = blocks.filter((b: any) => (b.type === typePreset.id || (!b.type && typePreset.id === '1')));
-              if (typeBlocks.length === 0) return null;
-              
-              const typeTotalCbm = typeBlocks.reduce((acc: any, b: any) => acc + (b.netCbm || 0), 0);
-              
-              return (
-                <div key={typePreset.id} className="space-y-3">
-                  <div className="flex items-center gap-4">
-                    <div className="bg-[#1a365d] text-white px-4 py-1.5 font-black uppercase tracking-[0.2em] text-[10pt] border-2 border-black shadow-[4px_4px_0px_rgba(0,0,0,1)]">
-                      {(typePreset.name || `TYPE ${typePreset.id}`).toUpperCase()} BLOCKS
-                    </div>
-                    <div className="h-[2pt] flex-1 bg-black"></div>
-                  </div>
-                  
-                  <table style={{ width: '100%', borderCollapse: 'collapse', border: '2pt solid black' }}>
-                    <thead>
-                      <tr style={{ background: '#1a365d', color: '#fff' }}>
-                        <th style={{ ...headerStyle, width: '10%', color: '#fff', background: '#1a365d' }}>SR NO</th>
-                        <th style={{ ...headerStyle, width: '20%', color: '#fff', background: '#1a365d' }}>BLOCK NO</th>
-                        <th style={{ ...headerStyle, width: '30%', color: '#fff', background: '#1a365d' }}>MEASUREMENT (CM)</th>
-                        <th style={{ ...headerStyle, width: '20%', color: '#fff', background: '#1a365d' }}>ALLW</th>
-                        <th style={{ ...headerStyle, width: '20%', color: '#fff', background: '#1a365d' }}>NET CBM</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {typeBlocks.map((b: any, bIdx: number) => {
-                        const allow = b.allowance !== undefined ? b.allowance : (typePreset?.allowance || 0);
-                        return (
-                          <tr key={b.id} style={{ background: bIdx % 2 === 0 ? '#fff' : '#f9fafb' }}>
-                            <td style={{ ...cellStyle, fontSize: '10pt' }}>{bIdx + 1}</td>
-                            <td style={{ ...cellStyle, fontSize: '10pt', fontWeight: 'bold' }}>{String(b.blockNo).padStart(3, '0')}</td>
-                            <td style={{ ...cellStyle, fontSize: '10pt' }}>{b.l1} × {b.l2} × {b.l3}</td>
-                            <td style={{ ...cellStyle, fontSize: '11pt', color: '#be123c', fontWeight: 'bold' }}>
-                              <div>{allow} cm</div>
-                            </td>
-                            <td style={{ ...cellStyle, fontSize: '11pt', fontWeight: '900' }}>{Number(b.netCbm || 0).toFixed(3)}</td>
-                          </tr>
-                        );
-                      })}
-                      <tr style={{ background: '#f1f5f9', fontWeight: '900', borderTop: '2.5pt solid black' }}>
-                        <td colSpan={4} style={{ ...cellStyle, textAlign: 'right', paddingRight: '24px', color: '#1a365d', textTransform: 'uppercase', fontSize: '10pt' }}>
-                          {typePreset.name || `TYPE ${typePreset.id}`} TOTAL ({String(typeBlocks.length).padStart(2, '0')} BLOCKS):
-                        </td>
-                        <td style={{ ...cellStyle, fontSize: '13pt', color: '#1a365d', background: '#e2e8f0' }}>{typeTotalCbm.toFixed(3)}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+      {/* PAGES: SUMMARY ABSTRACT SHEETS (Paginated) */}
+      <PaginatedAbstract 
+        h={h} 
+        cp={cp} 
+        blocks={blocks} 
+        createdAt={createdAt} 
+        compactCellStyle={compactCellStyle} 
+        compactHeaderStyle={compactHeaderStyle} 
+      />
       {blocks.map((b: any, idx: number) => {
         const preset = h.blockTypes?.find((p: any) => p.id === b.type) || h.blockTypes?.[0];
         const allowance = b.allowance !== undefined ? b.allowance : (preset?.allowance || 0);
