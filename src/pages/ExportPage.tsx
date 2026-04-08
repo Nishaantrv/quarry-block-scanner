@@ -124,7 +124,7 @@ export default function ExportPage() {
     const printStyles = `
       @page { 
         size: A4 portrait; 
-        margin: 0; 
+        margin: 15mm; 
       }
       body { 
         margin: 0; 
@@ -135,8 +135,16 @@ export default function ExportPage() {
       }
       .print-wrapper {
         width: 210mm;
-        margin: 0 auto;
+        margin: 0;
         background: white;
+      }
+      .page-break {
+        break-after: page;
+        page-break-after: always;
+      }
+      .break-inside-avoid {
+        break-inside: avoid;
+        page-break-inside: avoid;
       }
       ${Array.from(document.styleSheets)
         .map(sheet => {
@@ -318,22 +326,18 @@ export default function ExportPage() {
                 )}
                 style={{ transform: `scale(${zoom})` }}
               >
-                <div className={cn("border shadow-lg p-2 transition-colors bg-zinc-500/10 rounded-xl")}>
-                  <div ref={printRef} className={cn(
-                    "bg-white text-black p-[5mm] text-[8px] leading-tight mx-auto shadow-sm print:shadow-none",
-                    "w-[210mm] min-h-[297mm]"
-                  )}>
-                      <PreviewContent 
-                        activeDoc={activeDoc} 
-                        cp={cp} 
-                        h={h} 
-                        blocks={blocks} 
-                        totals={totals} 
-                        blockRange={blockRange} 
-                        isEditing={false}
-                        inspectionPhotos={inspection?.header.inspectionPhotos}
-                      />
-                  </div>
+                <div ref={printRef} className="space-y-8">
+                  <PreviewContent 
+                    activeDoc={activeDoc} 
+                    cp={cp} 
+                    h={h} 
+                    blocks={blocks} 
+                    totals={totals} 
+                    blockRange={blockRange} 
+                    isEditing={false}
+                    inspectionPhotos={inspection?.header.inspectionPhotos}
+                    createdAt={inspection?.createdAt}
+                  />
                 </div>
               </div>
             </div>
@@ -343,10 +347,7 @@ export default function ExportPage() {
 
       {/* HIDDEN PRINTABLE CONTAINER - Always Paper Formatted */}
       <div className="fixed -left-[10000px] -top-[10000px] pointer-events-none" aria-hidden="true">
-        <div ref={printHiddenRef} className={cn(
-          "bg-white text-black p-[5mm] text-[8px] leading-tight",
-          "w-[210mm]"
-        )}>
+        <div ref={printHiddenRef} className="space-y-0">
           <PreviewContent 
             activeDoc={activeDoc} 
             cp={isEditing ? editedProfile : cp} 
@@ -356,6 +357,7 @@ export default function ExportPage() {
             blockRange={blockRange} 
             isEditing={false}
             inspectionPhotos={inspection?.header.inspectionPhotos}
+            createdAt={inspection?.createdAt}
           />
         </div>
       </div>
@@ -364,7 +366,7 @@ export default function ExportPage() {
 }
 
 // Sub-component to switch between different document body types
-function PreviewContent({ activeDoc, cp, h, blocks, totals, blockRange, isEditing, inspectionPhotos }: any) {
+function PreviewContent({ activeDoc, cp, h, blocks, totals, blockRange, isEditing, inspectionPhotos, createdAt }: any) {
   return (
     <>
       {activeDoc !== 'inspection-report' && (
@@ -379,13 +381,14 @@ function PreviewContent({ activeDoc, cp, h, blocks, totals, blockRange, isEditin
           }
         />
       )}
-
+ 
       {activeDoc === 'inspection-report' && (
         <NormalReportBody
           blocks={blocks}
           h={h}
           cp={cp}
           inspectionPhotos={inspectionPhotos}
+          createdAt={createdAt}
         />
       )}
 
@@ -496,7 +499,7 @@ function DocumentEditor({ h, cp, blocks, onHeaderChange, onProfileChange, onBloc
                         value={block.l1} 
                         onChange={(e) => {
                           const newBlocks = [...blocks];
-                          newBlocks[idx] = buildBlock(block.id, block.blockNo, parseInt(e.target.value) || 0, block.l2, block.l3, h, block.remarks, undefined, block.type, block.pricePerCbm, block.photoUrl, block.photoUrls);
+                          newBlocks[idx] = buildBlock(block.id, block.blockNo, parseInt(e.target.value) || 0, block.l2, block.l3, h, block.remarks, undefined, block.type, block.pricePerCbm, block.photoUrl, block.photoUrls, block.photoRotations, block.date);
                           onBlocksChange(newBlocks);
                         }}
                         className="h-8 text-xs"
@@ -509,7 +512,7 @@ function DocumentEditor({ h, cp, blocks, onHeaderChange, onProfileChange, onBloc
                         value={block.l2} 
                         onChange={(e) => {
                           const newBlocks = [...blocks];
-                          newBlocks[idx] = buildBlock(block.id, block.blockNo, block.l1, parseInt(e.target.value) || 0, block.l3, h, block.remarks, undefined, block.type, block.pricePerCbm, block.photoUrl, block.photoUrls);
+                          newBlocks[idx] = buildBlock(block.id, block.blockNo, block.l1, parseInt(e.target.value) || 0, block.l3, h, block.remarks, undefined, block.type, block.pricePerCbm, block.photoUrl, block.photoUrls, block.photoRotations, block.date);
                           onBlocksChange(newBlocks);
                         }}
                         className="h-8 text-xs"
@@ -522,7 +525,7 @@ function DocumentEditor({ h, cp, blocks, onHeaderChange, onProfileChange, onBloc
                         value={block.l3} 
                         onChange={(e) => {
                           const newBlocks = [...blocks];
-                          newBlocks[idx] = buildBlock(block.id, block.blockNo, block.l1, block.l2, parseInt(e.target.value) || 0, h, block.remarks, undefined, block.type, block.pricePerCbm, block.photoUrl, block.photoUrls);
+                          newBlocks[idx] = buildBlock(block.id, block.blockNo, block.l1, block.l2, parseInt(e.target.value) || 0, h, block.remarks, undefined, block.type, block.pricePerCbm, block.photoUrl, block.photoUrls, block.photoRotations, block.date);
                           onBlocksChange(newBlocks);
                         }}
                         className="h-8 text-xs"
@@ -531,7 +534,7 @@ function DocumentEditor({ h, cp, blocks, onHeaderChange, onProfileChange, onBloc
                   </div>
 
                   <div className="space-y-1">
-                    <Label className="text-[9px] uppercase font-bold opacity-70">Remark</Label>
+                    <Label className="text-[9px] uppercase font-bold opacity-70">Remarks</Label>
                     <Input 
                       value={block.remarks || ''} 
                       onChange={(e) => {
@@ -540,7 +543,7 @@ function DocumentEditor({ h, cp, blocks, onHeaderChange, onProfileChange, onBloc
                         onBlocksChange(newBlocks);
                       }}
                       className="h-8 text-xs italic"
-                      placeholder="Add remark..."
+                      placeholder="Add remarks..."
                     />
                   </div>
 
@@ -551,7 +554,7 @@ function DocumentEditor({ h, cp, blocks, onHeaderChange, onProfileChange, onBloc
                           key={preset.id}
                           onClick={() => {
                             const newBlocks = [...blocks];
-                            newBlocks[idx] = buildBlock(block.id, block.blockNo, block.l1, block.l2, block.l3, h, block.remarks, undefined, preset.id, undefined, block.photoUrl, block.photoUrls);
+                            newBlocks[idx] = buildBlock(block.id, block.blockNo, block.l1, block.l2, block.l3, h, block.remarks, undefined, preset.id, undefined, block.photoUrl, block.photoUrls, block.photoRotations, block.date);
                             onBlocksChange(newBlocks);
                           }}
                           className={cn(
@@ -1140,7 +1143,7 @@ function InvoiceBody({ blocks, type, h, cp, totals, blockRange }: { blocks: any[
   );
 }
 
-function NormalReportBody({ blocks, cp, h, inspectionPhotos }: any) {
+function NormalReportBody({ blocks, cp, h, inspectionPhotos, createdAt }: any) {
   const cellStyle = { 
     border: '1.5pt solid #333', 
     padding: '10px 8px', 
@@ -1159,138 +1162,187 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos }: any) {
     color: '#0369a1'
   };
 
+  const totalCbm = blocks.reduce((acc: any, b: any) => acc + (b.netCbm || 0), 0);
+
   return (
-    <div className="w-full space-y-8">
+    <div className="flex flex-col items-center gap-12 py-12">
+      {/* PAGE 1: SUMMARY ABSTRACT SHEET */}
+      <div className="bg-white text-black p-[15mm] shadow-[0_20px_50px_rgba(0,0,0,0.15)] w-[210mm] min-h-[297mm] relative overflow-hidden border border-zinc-100 print:shadow-none print:border-none print:m-0 page-break flex flex-col justify-center">
+        <div className="border-[4pt] border-black p-4 bg-white h-auto flex flex-col">
+          {/* Header */}
+          <div className="flex justify-end mb-2">
+            <div className="text-[10pt] font-black uppercase tracking-widest text-[#1a365d]">
+              DATE: {createdAt ? new Date(createdAt).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB')}
+            </div>
+          </div>
+          
+          <div className="flex flex-col items-center border-b-[3pt] border-black pb-8 mb-10 text-center">
+            <h2 className="text-[24pt] font-[1000] uppercase tracking-[0.15em] text-[#1a365d] mb-4">DAKSHIN EXPORTS</h2>
+            <h3 className="text-[10pt] font-black uppercase tracking-[0.3em] text-zinc-400 mb-6">{cp.companyName}</h3>
+            <h1 className="text-3xl font-[1000] text-black leading-none uppercase tracking-tighter">
+              Inspection Report - Abstract
+            </h1>
+          </div>
+
+          {/* Abstract Table */}
+          <div className="px-4 flex-1">
+            <table style={{ width: '100%', borderCollapse: 'collapse', border: '2pt solid black' }}>
+              <thead>
+                <tr style={{ background: '#1a365d', color: '#fff' }}>
+                  <th style={{ ...headerStyle, width: '10%', color: '#fff', background: '#1a365d' }}>SR NO</th>
+                  <th style={{ ...headerStyle, width: '20%', color: '#fff', background: '#1a365d' }}>BLOCK NO</th>
+                  <th style={{ ...headerStyle, width: '30%', color: '#fff', background: '#1a365d' }}>DIMENSIONS (CM)</th>
+                  <th style={{ ...headerStyle, width: '20%', color: '#fff', background: '#1a365d' }}>ALLW</th>
+                  <th style={{ ...headerStyle, width: '20%', color: '#fff', background: '#1a365d' }}>NET CBM</th>
+                </tr>
+              </thead>
+              <tbody>
+                {blocks.map((b: any, bIdx: number) => {
+                  const preset = h.blockTypes?.find((p: any) => p.id === b.type) || h.blockTypes?.[0];
+                  const allow = b.allowance !== undefined ? b.allowance : (preset?.allowance || 0);
+                  return (
+                    <tr key={b.id} style={{ background: bIdx % 2 === 0 ? '#fff' : '#f9fafb' }}>
+                      <td style={{ ...cellStyle, fontSize: '10pt' }}>{bIdx + 1}</td>
+                      <td style={{ ...cellStyle, fontSize: '10pt', fontWeight: 'bold' }}>{String(b.blockNo).padStart(3, '0')}</td>
+                      <td style={{ ...cellStyle, fontSize: '10pt' }}>{b.l1} × {b.l2} × {b.l3}</td>
+                      <td style={{ ...cellStyle, fontSize: '10pt', color: '#be123c' }}>{allow} cm</td>
+                      <td style={{ ...cellStyle, fontSize: '10pt', fontWeight: '900' }}>{Number(b.netCbm || 0).toFixed(3)}</td>
+                    </tr>
+                  );
+                })}
+                <tr style={{ background: '#f8fafc', fontWeight: 'bold', borderTop: '2pt solid black' }}>
+                  <td colSpan={4} style={{ ...cellStyle, textAlign: 'right', paddingRight: '20px' }}>TOTAL NO. OF BLOCKS: {blocks.length}</td>
+                  <td style={{ ...cellStyle, fontSize: '12pt' }}>{totalCbm.toFixed(3)} m³</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
       {blocks.map((b: any, idx: number) => {
         const preset = h.blockTypes?.find((p: any) => p.id === b.type) || h.blockTypes?.[0];
         const allowance = b.allowance !== undefined ? b.allowance : (preset?.allowance || 0);
-        const allowanceText = allowance > 0 ? `${allowance} cm applied effectively` : 'No allowance applied';
+        const photos = [...(b.photoUrl ? [b.photoUrl] : []), ...(b.photoUrls || [])];
 
         return (
-          <div key={b.id} className="border-[4pt] border-black p-4 bg-white break-inside-avoid mb-8 page-break-after-always">
-            {/* Professional Header - Centered Stack (Only on first page) */}
-            {idx === 0 && (
-              <div className="flex flex-col items-center border-b-[3pt] border-black pb-8 mb-10 text-center">
-                 <h2 className="text-[24pt] font-[1000] uppercase tracking-[0.15em] text-[#1a365d] mb-4">DAKSHIN EXPORTS</h2>
-                 <h3 className="text-[10pt] font-black uppercase tracking-[0.3em] text-zinc-400 mb-6">{cp.companyName}</h3>
-                 <h1 className="text-3xl font-[1000] text-black leading-none uppercase tracking-tighter">
-                    Inspection Report
-                 </h1>
-              </div>
-            )}
+          <React.Fragment key={b.id}>
+            {/* SHEET 1: HEADER (if first) + TABLE + REMARKS */}
+            <div className="bg-white text-black p-[15mm] shadow-[0_20px_50px_rgba(0,0,0,0.15)] w-[210mm] min-h-[297mm] relative overflow-hidden border border-zinc-100 print:shadow-none print:border-none print:m-0 page-break flex flex-col justify-center">
+              <div className="border-[4pt] border-black p-4 bg-white h-auto flex flex-col">
 
-            {/* Measurement Table */}
-            <div className="px-4 mb-8">
-              <div className="bg-white border-2 border-black shadow-xl overflow-hidden rounded-sm">
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr>
-                      <th colSpan={6} style={{ ...cellStyle, padding: '15px', fontSize: '20pt', fontWeight: '500', background: '#fff', borderBottom: '3pt solid #000' }}>
-                        BLOCK NO : {String(b.blockNo).padStart(3, '0')}
-                      </th>
-                    </tr>
-                    <tr>
-                      <th style={{ ...headerStyle, width: '25%', textAlign: 'left' }}>MEASUREMENT TYPE</th>
-                      <th style={headerStyle}>LENGTH</th>
-                      <th style={headerStyle}>HEIGHT</th>
-                      <th style={headerStyle}>WIDTH</th>
-                      <th style={{ ...headerStyle, background: '#fff1f2', color: '#be123c' }}>ALLOWANCE</th>
-                      <th style={{ ...headerStyle, background: '#1a365d', color: '#fff' }}>NET CBM</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td style={{ ...cellStyle, fontWeight: 'bold', textAlign: 'left', background: '#fafafa' }}>GROSS ENTRY</td>
-                      <td style={cellStyle}>{b.l1}</td>
-                      <td style={cellStyle}>{b.l2}</td>
-                      <td style={cellStyle}>{b.l3}</td>
-                      <td rowSpan={2} style={{ ...cellStyle, fontWeight: '900', color: '#be123c', background: '#fffafa', fontSize: '14pt' }}>{allowance} CM</td>
-                      <td style={{ ...cellStyle, background: '#fafafa' }}>{( (b.l1 * b.l2 * b.l3) / 1000000 ).toFixed(3)}</td>
-                    </tr>
-                    <tr style={{ background: '#f0fdf4' }}>
-                      <td style={{ ...cellStyle, fontWeight: '900', textAlign: 'left', color: '#166534' }}>
-                        FINAL NET (Billable)
-                      </td>
-                      <td style={{ ...cellStyle, color: '#166534', fontWeight: '900' }}>{Math.max(b.l1 - allowance, 0)}</td>
-                      <td style={{ ...cellStyle, color: '#166534', fontWeight: '900' }}>{Math.max(b.l2 - allowance, 0)}</td>
-                      <td style={{ ...cellStyle, color: '#166534', fontWeight: '900' }}>{Math.max(b.l3 - allowance, 0)}</td>
-                      <td style={{ ...cellStyle, color: '#166534', fontWeight: '900', fontSize: '16pt' }}>{Number(b.netCbm || 0).toFixed(3)}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Photo List - Single column, fully viewable with side labels */}
-            <div className="grid grid-cols-1 gap-12 mb-8 px-4">
-              {((b.photoUrls && b.photoUrls.length > 0) || b.photoUrl) ? (
-                <>
-                  {[...(b.photoUrl ? [b.photoUrl] : []), ...(b.photoUrls || [])].map((url, pIdx) => (
-                    <div key={pIdx} className="space-y-4 text-center">
-                       <div className="text-sm font-black uppercase text-red-600 tracking-widest border-b border-red-200 pb-1 inline-block min-w-[300px]">
-                         BLOCK NO : {b.blockNo}/{String.fromCharCode(65 + pIdx)} SIDE
-                       </div>
-                         <div 
-                           className="border-[3pt] border-black shadow-2xl mx-auto inline-block bg-white"
-                           style={{ padding: '2mm' }}
-                         >
-                            <img 
-                              src={url} 
-                              alt={`Block ${b.blockNo} - Side ${String.fromCharCode(65 + pIdx)}`} 
-                              className="block h-auto w-auto max-w-full transition-all" 
-                              style={{ 
-                                maxHeight: '800px', 
-                                transform: `rotate(${b.photoRotations?.[url] || 0}deg)` 
-                              }} 
-                            />
-                         </div>
-                    </div>
-                  ))}
-                </>
-              ) : (
-                <div className="h-48 border-[3px] border-dashed border-zinc-200 flex flex-col items-center justify-center text-zinc-300 font-bold uppercase text-xs italic gap-2">
-                  <X className="h-8 w-8 opacity-20" />
-                  No photos captured for Block {b.blockNo}
-                </div>
-              )}
-            </div>
-
-            {b.remarks && (
-              <div className="mt-8 px-4">
-                <div style={{ border: '2px solid #000', padding: '12px', backgroundColor: '#fafafa', position: 'relative' }}>
-                  <div className="absolute -top-3 left-4 bg-black text-white px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest">Inspector Remarks</div>
-                  <div style={{ fontStyle: 'italic', fontWeight: 'bold', fontSize: '14px', color: '#000' }}>
-                    &ldquo; {b.remarks} &rdquo;
+                {/* Measurement Table */}
+                <div className="px-4 mb-8">
+                  <div className="bg-white border-2 border-black shadow-xl overflow-hidden rounded-sm">
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr>
+                          <th colSpan={6} style={{ ...cellStyle, padding: '15px', fontSize: '20pt', fontWeight: '500', background: '#fff', borderBottom: '3pt solid #000' }}>
+                            BLOCK NO : {String(b.blockNo).padStart(3, '0')}
+                          </th>
+                        </tr>
+                        <tr>
+                          <th style={{ ...headerStyle, width: '25%', textAlign: 'left' }}>DIMENSIONS</th>
+                          <th style={headerStyle}>LENGTH</th>
+                          <th style={headerStyle}>HEIGHT</th>
+                          <th style={headerStyle}>WIDTH</th>
+                          <th style={{ ...headerStyle, background: '#fff1f2', color: '#be123c' }}>ALLOWANCE</th>
+                          <th style={{ ...headerStyle, background: '#1a365d', color: '#fff' }}>NET CBM</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td style={{ ...cellStyle, fontWeight: 'bold', textAlign: 'left', background: '#fafafa' }}>GROSS</td>
+                          <td style={cellStyle}>{b.l1}</td>
+                          <td style={cellStyle}>{b.l2}</td>
+                          <td style={cellStyle}>{b.l3}</td>
+                          <td rowSpan={2} style={{ ...cellStyle, fontWeight: '900', color: '#be123c', background: '#fffafa', fontSize: '14pt' }}>{allowance} CM</td>
+                          <td style={{ ...cellStyle, background: '#fafafa' }}>{((b.l1 * b.l2 * b.l3) / 1000000).toFixed(3)}</td>
+                        </tr>
+                        <tr style={{ background: '#f0fdf4' }}>
+                          <td style={{ ...cellStyle, fontWeight: '900', textAlign: 'left', color: '#166534' }}>
+                            NET
+                          </td>
+                          <td style={{ ...cellStyle, color: '#166534', fontWeight: '900' }}>{Math.max(b.l1 - allowance, 0)}</td>
+                          <td style={{ ...cellStyle, color: '#166534', fontWeight: '900' }}>{Math.max(b.l2 - allowance, 0)}</td>
+                          <td style={{ ...cellStyle, color: '#166534', fontWeight: '900' }}>{Math.max(b.l3 - allowance, 0)}</td>
+                          <td style={{ ...cellStyle, color: '#166534', fontWeight: '900', fontSize: '16pt' }}>{Number(b.netCbm || 0).toFixed(3)}</td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
                 </div>
+
+                {/* Inspector Remarks - Always on the Table Sheet */}
+                {b.remarks && (
+                  <div className="mt-8 px-4 pb-8">
+                    <div style={{ border: '2px solid #000', padding: '12px', backgroundColor: '#fafafa', position: 'relative' }}>
+                      <div className="absolute -top-3 left-4 bg-black text-white px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest">Remarks</div>
+                      <div style={{ fontStyle: 'italic', fontWeight: 'bold', fontSize: '14px', color: '#000' }}>
+                        &ldquo; {b.remarks} &rdquo;
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </div>
+
+            {/* SUBSEQUENT SHEETS: INDIVIDUAL PHOTOS */}
+            {photos.map((url, pIdx) => (
+              <div 
+                key={`${b.id}-photo-${pIdx}`} 
+                className="bg-white text-black p-[15mm] shadow-[0_20px_50px_rgba(0,0,0,0.15)] w-[210mm] min-h-[297mm] relative overflow-hidden border border-zinc-100 print:shadow-none print:border-none print:m-0 page-break flex flex-col justify-center items-center"
+              >
+                <div className="border-[4pt] border-black p-8 bg-white h-auto w-full flex flex-col items-center">
+                   <div className="text-xl font-black uppercase text-red-600 tracking-[0.2em] border-b-2 border-red-200 pb-2 mb-12 text-center w-full">
+                     BLOCK NO : {b.blockNo}/{String.fromCharCode(65 + pIdx)} SIDE
+                   </div>
+                   
+                   <div className="flex-1 flex items-center justify-center w-full">
+                      <div 
+                         className="border-[3pt] border-black shadow-2xl bg-white p-[2mm]"
+                      >
+                         <img 
+                           src={url} 
+                           alt={`Block ${b.blockNo} - Side ${String.fromCharCode(65 + pIdx)}`} 
+                           className="block h-auto w-auto max-w-full transition-all" 
+                           style={{ 
+                             maxHeight: '750px', 
+                             transform: `rotate(${h.photoRotations?.[url] || 0}deg)` 
+                           }} 
+                         />
+                      </div>
+                   </div>
+                </div>
+              </div>
+            ))}
+          </React.Fragment>
         );
       })}
 
-
-      <div className="mt-12 pt-8 border-t-[3px] border-black" style={{ pageBreakInside: 'avoid' }}>
-        <div className="flex justify-between items-end px-4 font-serif">
-          <div className="space-y-2">
-             <div className="flex items-center gap-4">
-                <div className="text-center bg-zinc-100 border border-black p-2 min-w-[100px]">
-                   <p className="text-[8px] font-bold uppercase text-zinc-500">Total Blocks</p>
-                   <p className="text-2xl font-black">{blocks.length}</p>
-                </div>
-                <div className="text-center bg-zinc-100 border border-black p-2 min-w-[150px]">
-                   <p className="text-[8px] font-bold uppercase text-zinc-500">Total CBM</p>
-                   <p className="text-2xl font-black text-green-700">{blocks.reduce((acc: any, b: any) => acc + (b.netCbm || 0), 0).toFixed(3)} m³</p>
-                </div>
-             </div>
-             <p className="text-[9px] font-bold text-zinc-400 uppercase italic">* This report serves as an official inspection document generated via Dakshin Scanner App.</p>
-          </div>
-          <div className="text-right">
-            <div style={{ color: '#1a365d' }} className="font-black uppercase text-xl border-b-2 border-black pb-1 mb-4 flex flex-col items-end">
-               <span className="text-[10px] text-zinc-400 font-bold mb-1">FOR</span>
-               {cp.companyName}
+      {/* Summary Page */}
+      <div className="bg-white text-black p-[15mm] shadow-[0_20px_50px_rgba(0,0,0,0.15)] w-[210mm] min-h-[297mm] flex flex-col justify-end print:shadow-none print:border-none print:m-0 page-break">
+        <div className="mt-12 pt-8 border-t-[3px] border-black" style={{ pageBreakInside: 'avoid' }}>
+          <div className="flex justify-between items-end px-4 font-serif">
+            <div className="space-y-2">
+               <div className="flex items-center gap-4">
+                  <div className="text-center bg-zinc-100 border border-black p-2 min-w-[100px]">
+                     <p className="text-[8px] font-bold uppercase text-zinc-500">Total Blocks</p>
+                     <p className="text-2xl font-black">{blocks.length}</p>
+                  </div>
+                  <div className="text-center bg-zinc-100 border border-black p-2 min-w-[150px]">
+                     <p className="text-[8px] font-bold uppercase text-zinc-500">Total CBM</p>
+                     <p className="text-2xl font-black text-green-700">{blocks.reduce((acc: any, b: any) => acc + (b.netCbm || 0), 0).toFixed(3)} m³</p>
+                  </div>
+               </div>
+               <p className="text-[9px] font-bold text-zinc-400 uppercase italic">* This report serves as an official inspection document generated via Dakshin Scanner App.</p>
             </div>
-            <p className="font-black italic text-[10px] uppercase tracking-widest">Authorized Inspection Signatory</p>
+            <div className="text-right">
+              <div style={{ color: '#1a365d' }} className="font-black uppercase text-xl border-b-2 border-black pb-1 mb-4 flex flex-col items-end">
+                 <span className="text-[10px] text-zinc-400 font-bold mb-1">FOR</span>
+                 {cp.companyName}
+              </div>
+              <p className="font-black italic text-[10px] uppercase tracking-widest">Authorized Inspection Signatory</p>
+            </div>
           </div>
         </div>
       </div>

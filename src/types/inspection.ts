@@ -110,6 +110,7 @@ export interface Block {
   photoUrls?: string[];
   photoRotations?: Record<string, number>;
   pricePerCbm?: number;
+  date?: string;
 }
 
 export interface InspectionTotals {

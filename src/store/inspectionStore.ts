@@ -24,8 +24,8 @@ interface InspectionStore {
   discardActiveInspection: () => void;
   checkDraftExpiration: () => void;
 
-  addBlock: (l1: number, l2: number, l3: number, remarks?: string, allowance?: number, type?: string, pricePerCbm?: number, photoUrl?: string, photoUrls?: string[], photoRotations?: Record<string, number>) => void;
-  updateBlock: (blockId: string, l1: number, l2: number, l3: number, remarks?: string, allowance?: number, type?: string, pricePerCbm?: number, photoUrl?: string, photoUrls?: string[], photoRotations?: Record<string, number>) => void;
+  addBlock: (l1: number, l2: number, l3: number, remarks?: string, allowance?: number, type?: string, pricePerCbm?: number, photoUrl?: string, photoUrls?: string[], photoRotations?: Record<string, number>, date?: string) => void;
+  updateBlock: (blockId: string, l1: number, l2: number, l3: number, remarks?: string, allowance?: number, type?: string, pricePerCbm?: number, photoUrl?: string, photoUrls?: string[], photoRotations?: Record<string, number>, date?: string) => void;
   updateBlocks: (blocks: Block[]) => void;
   deleteBlock: (blockId: string) => void;
   updateHeader: (header: InspectionHeader) => void;
@@ -210,7 +210,7 @@ export const useInspectionStore = create<InspectionStore>()(
         }
       },
 
-      addBlock: (l1, l2, l3, remarks = '', allowance, type = '1', pricePerCbm, photoUrl, photoUrls, photoRotations) => {
+      addBlock: (l1, l2, l3, remarks = '', allowance, type = '1', pricePerCbm, photoUrl, photoUrls, photoRotations, date) => {
         const { activeInspection } = get();
         if (!activeInspection) return;
         const { header, blocks } = activeInspection;
@@ -230,7 +230,8 @@ export const useInspectionStore = create<InspectionStore>()(
           pricePerCbm,
           photoUrl,
           photoUrls,
-          photoRotations
+          photoRotations,
+          date || new Date().toLocaleDateString('en-GB')
         );
         const newBlocks = [...blocks, block];
         set({
@@ -244,7 +245,7 @@ export const useInspectionStore = create<InspectionStore>()(
         setTimeout(() => get().syncActiveToDb(), 100);
       },
 
-      updateBlock: (blockId, l1, l2, l3, remarks, allowance, type, pricePerCbm, photoUrl, photoUrls, photoRotations) => {
+      updateBlock: (blockId, l1, l2, l3, remarks, allowance, type, pricePerCbm, photoUrl, photoUrls, photoRotations, date) => {
         const { activeInspection } = get();
         if (!activeInspection) return;
         const { header } = activeInspection;
@@ -263,7 +264,8 @@ export const useInspectionStore = create<InspectionStore>()(
               pricePerCbm !== undefined ? pricePerCbm : b.pricePerCbm,
               photoUrl !== undefined ? photoUrl : b.photoUrl,
               photoUrls !== undefined ? photoUrls : b.photoUrls,
-              photoRotations !== undefined ? photoRotations : b.photoRotations
+              photoRotations !== undefined ? photoRotations : b.photoRotations,
+              date !== undefined ? date : b.date
             )
             : b
         );
