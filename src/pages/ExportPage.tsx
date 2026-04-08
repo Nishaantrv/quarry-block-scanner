@@ -1310,7 +1310,7 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos }: any) {
                       <td style={cellStyle}>{b.l1}</td>
                       <td style={cellStyle}>{b.l2}</td>
                       <td style={cellStyle}>{b.l3}</td>
-                      <td style={cellStyle}>-</td>
+                      <td rowSpan={2} style={{ ...cellStyle, fontWeight: 'bold', color: '#be123c' }}>{allowance} CM</td>
                       <td style={cellStyle}>{( (b.l1 * b.l2 * b.l3) / 1000000 ).toFixed(3)}</td>
                     </tr>
                     <tr style={{ background: '#fffcf0' }}>
@@ -1320,7 +1320,6 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos }: any) {
                       <td style={cellStyle}>{b.l1}</td>
                       <td style={{ ...cellStyle, color: '#dc2626', fontWeight: 'bold' }}>{Math.max(b.l2 - allowance, 0)}</td>
                       <td style={cellStyle}>{b.l3}</td>
-                      <td style={{ ...cellStyle, fontWeight: 'bold', color: '#be123c' }}>{allowance} CM</td>
                       <td style={{ ...cellStyle, fontWeight: '900', color: '#16a34a', fontSize: '14px', background: '#f0fdf4' }}>{Number(b.netCbm || 0).toFixed(3)}</td>
                     </tr>
                   </tbody>
