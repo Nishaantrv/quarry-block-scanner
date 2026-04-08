@@ -35,6 +35,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { ObliqueBlockViews } from '@/components/ObliqueBlockViews';
 
 type DocType = 'gross-packing' | 'net-packing' | 'gross-invoice' | 'net-invoice' | 'inspection-report';
 
@@ -1167,8 +1168,8 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos, createdAt }: any) {
   return (
     <div className="flex flex-col items-center gap-12 py-12">
       {/* PAGE 1: SUMMARY ABSTRACT SHEET */}
-      <div className="bg-white text-black p-[15mm] shadow-[0_20px_50px_rgba(0,0,0,0.15)] w-[210mm] min-h-[297mm] relative overflow-hidden border border-zinc-100 print:shadow-none print:border-none print:m-0 page-break flex flex-col justify-center">
-        <div className="border-[4pt] border-black p-4 bg-white h-auto flex flex-col">
+      <div className="bg-white text-black p-[15mm] shadow-[0_20px_50px_rgba(0,0,0,0.15)] w-[210mm] min-h-[297mm] relative overflow-hidden border-[3pt] border-black print:shadow-none print:m-0 page-break flex flex-col justify-center">
+        <div className="p-4 bg-white h-auto flex flex-col">
           {/* Header */}
           <div className="flex justify-end mb-2">
             <div className="text-[10pt] font-black uppercase tracking-widest text-[#1a365d]">
@@ -1191,7 +1192,7 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos, createdAt }: any) {
                 <tr style={{ background: '#1a365d', color: '#fff' }}>
                   <th style={{ ...headerStyle, width: '10%', color: '#fff', background: '#1a365d' }}>SR NO</th>
                   <th style={{ ...headerStyle, width: '20%', color: '#fff', background: '#1a365d' }}>BLOCK NO</th>
-                  <th style={{ ...headerStyle, width: '30%', color: '#fff', background: '#1a365d' }}>DIMENSIONS (CM)</th>
+                  <th style={{ ...headerStyle, width: '30%', color: '#fff', background: '#1a365d' }}>MEASUREMENT (CM)</th>
                   <th style={{ ...headerStyle, width: '20%', color: '#fff', background: '#1a365d' }}>ALLW</th>
                   <th style={{ ...headerStyle, width: '20%', color: '#fff', background: '#1a365d' }}>NET CBM</th>
                 </tr>
@@ -1227,8 +1228,8 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos, createdAt }: any) {
         return (
           <React.Fragment key={b.id}>
             {/* SHEET 1: HEADER (if first) + TABLE + REMARKS */}
-            <div className="bg-white text-black p-[15mm] shadow-[0_20px_50px_rgba(0,0,0,0.15)] w-[210mm] min-h-[297mm] relative overflow-hidden border border-zinc-100 print:shadow-none print:border-none print:m-0 page-break flex flex-col justify-center">
-              <div className="border-[4pt] border-black p-4 bg-white h-auto flex flex-col">
+            <div className="bg-white text-black p-[15mm] shadow-[0_20px_50px_rgba(0,0,0,0.15)] w-[210mm] min-h-[297mm] relative overflow-hidden border-[3pt] border-black print:shadow-none print:m-0 page-break flex flex-col justify-center">
+              <div className="p-4 bg-white h-auto flex flex-col">
 
                 {/* Measurement Table */}
                 <div className="px-4 mb-8">
@@ -1241,10 +1242,10 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos, createdAt }: any) {
                           </th>
                         </tr>
                         <tr>
-                          <th style={{ ...headerStyle, width: '25%', textAlign: 'left' }}>DIMENSIONS</th>
-                          <th style={headerStyle}>LENGTH</th>
-                          <th style={headerStyle}>HEIGHT</th>
-                          <th style={headerStyle}>WIDTH</th>
+                          <th style={{ ...headerStyle, width: '25%', textAlign: 'left' }}>MEASUREMENT</th>
+                          <th style={headerStyle}>LENGTH (CM)</th>
+                          <th style={headerStyle}>HEIGHT (CM)</th>
+                          <th style={headerStyle}>WIDTH (CM)</th>
                           <th style={{ ...headerStyle, background: '#fff1f2', color: '#be123c' }}>ALLOWANCE</th>
                           <th style={{ ...headerStyle, background: '#1a365d', color: '#fff' }}>NET CBM</th>
                         </tr>
@@ -1272,17 +1273,24 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos, createdAt }: any) {
                   </div>
                 </div>
 
+                {/* 3D Visualizer - Centered below table */}
+                <div className="px-12 mb-8 opacity-80 scale-90">
+                  <ObliqueBlockViews 
+                    length={b.l1} 
+                    height={b.l2} 
+                    width={b.l3} 
+                  />
+                </div>
+
                 {/* Inspector Remarks - Always on the Table Sheet */}
-                {b.remarks && (
-                  <div className="mt-8 px-4 pb-8">
-                    <div style={{ border: '2px solid #000', padding: '12px', backgroundColor: '#fafafa', position: 'relative' }}>
-                      <div className="absolute -top-3 left-4 bg-black text-white px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest">Remarks</div>
-                      <div style={{ fontStyle: 'italic', fontWeight: 'bold', fontSize: '14px', color: '#000' }}>
-                        &ldquo; {b.remarks} &rdquo;
-                      </div>
+                <div className="mt-8 px-4 pb-8">
+                  <div style={{ border: '2px solid #000', padding: '12px', backgroundColor: '#fafafa', position: 'relative', minHeight: '60px' }}>
+                    <div className="absolute -top-3 left-4 bg-black text-white px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest">Remarks</div>
+                    <div style={{ fontStyle: 'italic', fontWeight: 'bold', fontSize: '14px', color: '#000' }}>
+                      {b.remarks && <>&ldquo; {b.remarks} &rdquo;</>}
                     </div>
                   </div>
-                )}
+                </div>
               </div>
             </div>
 
@@ -1290,9 +1298,9 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos, createdAt }: any) {
             {photos.map((url, pIdx) => (
               <div 
                 key={`${b.id}-photo-${pIdx}`} 
-                className="bg-white text-black p-[15mm] shadow-[0_20px_50px_rgba(0,0,0,0.15)] w-[210mm] min-h-[297mm] relative overflow-hidden border border-zinc-100 print:shadow-none print:border-none print:m-0 page-break flex flex-col justify-center items-center"
+                className="bg-white text-black p-[15mm] shadow-[0_20px_50px_rgba(0,0,0,0.15)] w-[210mm] min-h-[297mm] relative overflow-hidden border-[3pt] border-black print:shadow-none print:m-0 page-break flex flex-col justify-center items-center"
               >
-                <div className="border-[4pt] border-black p-8 bg-white h-auto w-full flex flex-col items-center">
+                <div className="p-8 bg-white h-auto w-full flex flex-col items-center">
                    <div className="text-xl font-black uppercase text-red-600 tracking-[0.2em] border-b-2 border-red-200 pb-2 mb-12 text-center w-full">
                      BLOCK NO : {b.blockNo}/{String.fromCharCode(65 + pIdx)} SIDE
                    </div>
@@ -1320,7 +1328,7 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos, createdAt }: any) {
       })}
 
       {/* Summary Page */}
-      <div className="bg-white text-black p-[15mm] shadow-[0_20px_50px_rgba(0,0,0,0.15)] w-[210mm] min-h-[297mm] flex flex-col justify-end print:shadow-none print:border-none print:m-0 page-break">
+      <div className="bg-white text-black p-[15mm] shadow-[0_20px_50px_rgba(0,0,0,0.15)] w-[210mm] min-h-[297mm] flex flex-col justify-end border-[3pt] border-black print:shadow-none print:m-0 page-break">
         <div className="mt-12 pt-8 border-t-[3px] border-black" style={{ pageBreakInside: 'avoid' }}>
           <div className="flex justify-between items-end px-4 font-serif">
             <div className="space-y-2">

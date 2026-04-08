@@ -82,9 +82,10 @@ export default function MarkingPage() {
   const isEditing = currentIndex >= 0 && currentIndex < blocks.length;
   const currentBlock = isEditing ? blocks[currentIndex] : null;
 
-  const nextBlockNo = blocks.length === 0
+  const sameTypeBlocks = blocks.filter(b => b.type === blockType);
+  const nextBlockNo = sameTypeBlocks.length === 0
     ? inspection.header.startingBlockNumber
-    : blocks[blocks.length - 1].blockNo + 1;
+    : Math.max(...sameTypeBlocks.map(b => b.blockNo)) + 1;
 
   const displayBlockNo = isEditing
     ? currentBlock!.blockNo
@@ -350,7 +351,7 @@ export default function MarkingPage() {
           <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
             <div className={cn("px-3 py-1.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wide flex items-center gap-2", isEditing ? "bg-amber-500/10 text-amber-500 border border-amber-500/20" : "bg-primary/10 text-primary border border-primary/20 shadow-sm")}>
               {isEditing ? <Edit3 className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-              {isEditing ? `Modifying #${currentIndex + 1}` : `New Block #${blocks.length + 1}`}
+              {isEditing ? `Modifying #${currentIndex + 1}` : `New Block #${nextBlockNo}`}
             </div>
 
           </div>

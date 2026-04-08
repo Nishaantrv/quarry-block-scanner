@@ -214,9 +214,10 @@ export const useInspectionStore = create<InspectionStore>()(
         const { activeInspection } = get();
         if (!activeInspection) return;
         const { header, blocks } = activeInspection;
-        const blockNo = blocks.length === 0
+        const sameTypeBlocks = blocks.filter(b => b.type === type);
+        const blockNo = sameTypeBlocks.length === 0
           ? header.startingBlockNumber
-          : blocks[blocks.length - 1].blockNo + 1;
+          : Math.max(...sameTypeBlocks.map(b => b.blockNo)) + 1;
         const block = buildBlock(
           generateId(),
           blockNo,
