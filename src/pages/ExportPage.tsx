@@ -1238,10 +1238,11 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos }: any) {
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
-                      <th style={{ ...headerStyle, width: '30%', textAlign: 'left' }}>MEASUREMENT TYPE</th>
+                      <th style={{ ...headerStyle, width: '25%', textAlign: 'left' }}>MEASUREMENT TYPE</th>
                       <th style={headerStyle}>LENGTH</th>
                       <th style={headerStyle}>HEIGHT</th>
                       <th style={headerStyle}>WIDTH</th>
+                      <th style={{ ...headerStyle, background: '#fff1f2', color: '#be123c' }}>ALLOWANCE</th>
                       <th style={{ ...headerStyle, background: '#e0f2fe', color: '#0369a1' }}>NET CBM</th>
                     </tr>
                   </thead>
@@ -1251,16 +1252,17 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos }: any) {
                       <td style={cellStyle}>{b.l1}</td>
                       <td style={cellStyle}>{b.l2}</td>
                       <td style={cellStyle}>{b.l3}</td>
+                      <td style={cellStyle}>-</td>
                       <td style={cellStyle}>{( (b.l1 * b.l2 * b.l3) / 1000000 ).toFixed(3)}</td>
                     </tr>
                     <tr style={{ background: '#fffcf0' }}>
                       <td style={{ ...cellStyle, fontWeight: 'bold', textAlign: 'left' }}>
                         FINAL NET (Deducted)
-                        <div className="text-[7px] text-zinc-400 font-normal uppercase">{allowanceText}</div>
                       </td>
                       <td style={cellStyle}>{b.l1}</td>
                       <td style={{ ...cellStyle, color: '#dc2626', fontWeight: 'bold' }}>{Math.max(b.l2 - allowance, 0)}</td>
                       <td style={cellStyle}>{b.l3}</td>
+                      <td style={{ ...cellStyle, fontWeight: 'bold', color: '#be123c' }}>{allowance} CM</td>
                       <td style={{ ...cellStyle, fontWeight: '900', color: '#16a34a', fontSize: '14px', background: '#f0fdf4' }}>{Number(b.netCbm || 0).toFixed(3)}</td>
                     </tr>
                   </tbody>
