@@ -1216,8 +1216,11 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos }: any) {
                           <img 
                             src={url} 
                             alt={`Block ${b.blockNo} - Side ${String.fromCharCode(65 + pIdx)}`} 
-                            className="w-full h-auto object-contain block mx-auto" 
-                            style={{ maxHeight: '600px' }} 
+                            className="w-full h-auto object-contain block mx-auto transition-all" 
+                            style={{ 
+                              maxHeight: '600px', 
+                              transform: `rotate(${b.photoRotations?.[url] || 0}deg)` 
+                            }} 
                           />
                        </div>
                     </div>
@@ -1252,8 +1255,13 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos }: any) {
           <div className="grid grid-cols-2 gap-6 px-4">
             {inspectionPhotos.map((url: string, idx: number) => (
               <div key={`gen-${idx}`} className="flex flex-col gap-2">
-                <div className="border-2 border-black p-1 bg-white">
-                  <img src={url} alt={`Site Evidence ${idx + 1}`} className="w-full h-64 object-cover" />
+                <div className="border-2 border-black p-1 bg-white overflow-hidden">
+                  <img 
+                    src={url} 
+                    alt={`Site Evidence ${idx + 1}`} 
+                    className="w-full h-64 object-contain transition-all duration-300" 
+                    style={{ transform: `rotate(${h.photoRotations?.[url] || 0}deg)` }}
+                  />
                 </div>
                 <div className="text-[10px] font-bold uppercase text-center bg-zinc-100 p-1 border border-black border-top-0">
                   GENERAL SITE PHOTO #{idx + 1}

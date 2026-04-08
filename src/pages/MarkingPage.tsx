@@ -5,7 +5,7 @@ import { SummaryBar } from '@/components/SummaryBar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Save, RotateCcw, ChevronLeft, ChevronRight, Camera, X, Settings, Edit3, Trash2, Maximize2, Move, Ruler, Info, AlertTriangle, Check, CheckCircle2, Circle, Plus, User, Ship, Wallet, Box, Images } from 'lucide-react';
+import { ArrowLeft, Save, RotateCcw, RotateCw, ChevronLeft, ChevronRight, Camera, X, Settings, Edit3, Trash2, Maximize2, Move, Ruler, Info, AlertTriangle, Check, CheckCircle2, Circle, Plus, User, Ship, Wallet, Box, Images } from 'lucide-react';
 import { ObliqueBlockViews } from '@/components/ObliqueBlockViews';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -31,7 +31,7 @@ export default function MarkingPage() {
   const [remarks, setRemarks] = useState('');
   const [blockType, setBlockType] = useState<string>('1');
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
-  const [rotation, setRotation] = useState(0);
+  const [photoRotations, setPhotoRotations] = useState<Record<string, number>>({});
   const [isUploading, setIsUploading] = useState(false);
   const [lastAdded, setLastAdded] = useState<{ blockNo: number; dims: string; netCbm: string } | null>(null);
 
@@ -109,7 +109,7 @@ export default function MarkingPage() {
     setRemarks(block.remarks || '');
     setBlockType(block.type || '1');
     setPhotoUrls(block.photoUrls || (block.photoUrl ? [block.photoUrl] : []));
-    setRotation(0);
+    setPhotoRotations(block.photoRotations || {});
     setCurrentIndex(index);
   };
 
@@ -132,7 +132,7 @@ export default function MarkingPage() {
     const v2 = parseFloat(l2);
     const v3 = parseFloat(l3);
     if (!isNaN(v1) && !isNaN(v2) && !isNaN(v3) && v1 > 0 && v2 > 0 && v3 > 0) {
-      updateBlock(currentBlock!.id, v1, v2, v3, remarks, currentBlock?.allowance, blockType as any, currentBlock?.pricePerCbm, undefined, photoUrls);
+      updateBlock(currentBlock!.id, v1, v2, v3, remarks, currentBlock?.allowance, blockType as any, currentBlock?.pricePerCbm, undefined, photoUrls, photoRotations);
     }
   };
 
@@ -143,7 +143,7 @@ export default function MarkingPage() {
     setRemarks('');
     setBlockType('1');
     setPhotoUrls([]);
-    setRotation(0);
+    setPhotoRotations({});
     setCurrentIndex(-1);
     l1Ref.current?.focus();
   };
@@ -168,7 +168,7 @@ export default function MarkingPage() {
     const allowanceValue = preset.allowance;
     const priceValue = preset.pricePerCbm;
 
-    addBlock(v1, v2, v3, remarks, allowanceValue, activeType, priceValue, undefined, photoUrls);
+    addBlock(v1, v2, v3, remarks, allowanceValue, activeType, priceValue, undefined, photoUrls, photoRotations);
 
     // Feedback calculations
     const n1 = Math.max(v1 - allowanceValue, 0);
@@ -183,7 +183,7 @@ export default function MarkingPage() {
     });
 
     if (navigator.vibrate) navigator.vibrate(50);
-    setL1(''); setL2(''); setL3(''); setRemarks(''); setPhotoUrls([]); setRotation(0);
+    setL1(''); setL2(''); setL3(''); setRemarks(''); setPhotoUrls([]); setPhotoRotations({});
     l1Ref.current?.focus();
     updateDraftBlock(undefined);
     setTimeout(() => setLastAdded(null), 2500);
@@ -224,8 +224,11 @@ export default function MarkingPage() {
     setPhotoUrls(prev => prev.filter((_, i) => i !== index));
   };
 
-  const rotateImage = () => {
-    setRotation((prev) => (prev + 90) % 360);
+  const rotateImage = (url: string) => {
+    setPhotoRotations(prev => ({
+      ...prev,
+      [url]: ((prev[url] || 0) + 90) % 360
+    }));
   };
 
   const handleFinishInspection = () => {
@@ -489,15 +492,26 @@ export default function MarkingPage() {
                       <img
                         src={url}
                         alt={`Block Photo ${idx + 1}`}
-                        className="h-full w-full object-cover transition-transform group-hover/photo:scale-110"
+                        className="h-full w-full object-cover transition-all"
+                        style={{ transform: `rotate(${photoRotations[url] || 0}deg)` }}
                       />
                       <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/photo:opacity-100 transition-opacity" />
-                      <button
-                        onClick={() => removePhoto(idx)}
-                        className="absolute top-1 right-1 bg-destructive/90 text-destructive-foreground rounded-full p-1 shadow-lg hover:scale-110 transition-transform z-20"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
+                      <div className="absolute top-1 right-1 flex gap-1 z-20">
+                        <button
+                          onClick={() => rotateImage(url)}
+                          className="bg-primary/90 text-primary-foreground rounded-full p-1.5 shadow-lg hover:scale-110 transition-transform"
+                          title="Rotate Photo"
+                        >
+                          <RotateCw className="h-3 w-3" />
+                        </button>
+                        <button
+                          onClick={() => removePhoto(idx)}
+                          className="bg-destructive/90 text-destructive-foreground rounded-full p-1.5 shadow-lg hover:scale-110 transition-transform"
+                          title="Remove Photo"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

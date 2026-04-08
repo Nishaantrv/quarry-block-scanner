@@ -24,8 +24,8 @@ interface InspectionStore {
   discardActiveInspection: () => void;
   checkDraftExpiration: () => void;
 
-  addBlock: (l1: number, l2: number, l3: number, remarks?: string, allowance?: number, type?: string, pricePerCbm?: number, photoUrl?: string, photoUrls?: string[]) => void;
-  updateBlock: (blockId: string, l1: number, l2: number, l3: number, remarks?: string, allowance?: number, type?: string, pricePerCbm?: number, photoUrl?: string, photoUrls?: string[]) => void;
+  addBlock: (l1: number, l2: number, l3: number, remarks?: string, allowance?: number, type?: string, pricePerCbm?: number, photoUrl?: string, photoUrls?: string[], photoRotations?: Record<string, number>) => void;
+  updateBlock: (blockId: string, l1: number, l2: number, l3: number, remarks?: string, allowance?: number, type?: string, pricePerCbm?: number, photoUrl?: string, photoUrls?: string[], photoRotations?: Record<string, number>) => void;
   updateBlocks: (blocks: Block[]) => void;
   deleteBlock: (blockId: string) => void;
   updateHeader: (header: InspectionHeader) => void;
@@ -38,6 +38,8 @@ interface InspectionStore {
   updateInspectionPhotos: (photos: string[]) => void;
   headerDraft: Partial<InspectionHeader> | null;
   updateHeaderDraft: (draft: Partial<InspectionHeader> | null) => void;
+  updateBlockPhotoRotation: (blockId: string, photoUrl: string, rotation: number) => void;
+  updateHeaderPhotoRotation: (photoUrl: string, rotation: number) => void;
 
   customers: Customer[];
   selectedCustomerId: string | null;
@@ -153,6 +155,44 @@ export const useInspectionStore = create<InspectionStore>()(
         setTimeout(() => get().syncActiveToDb(), 100);
       },
 
+      updateBlockPhotoRotation: (blockId, photoUrl, rotation) => {
+        const { activeInspection } = get();
+        if (!activeInspection) return;
+        const newBlocks = activeInspection.blocks.map((b) => {
+          if (b.id !== blockId) return b;
+          const map = b.photoRotations || {};
+          return {
+            ...b,
+            photoRotations: { ...map, [photoUrl]: rotation }
+          };
+        });
+        set({
+          activeInspection: {
+            ...activeInspection,
+            blocks: newBlocks,
+            updatedAt: new Date().toISOString(),
+          }
+        });
+        setTimeout(() => get().syncActiveToDb(), 100);
+      },
+
+      updateHeaderPhotoRotation: (photoUrl, rotation) => {
+        const { activeInspection } = get();
+        if (!activeInspection) return;
+        const map = activeInspection.header.photoRotations || {};
+        set({
+          activeInspection: {
+            ...activeInspection,
+            header: {
+              ...activeInspection.header,
+              photoRotations: { ...map, [photoUrl]: rotation }
+            },
+            updatedAt: new Date().toISOString(),
+          }
+        });
+        setTimeout(() => get().syncActiveToDb(), 100);
+      },
+
       discardActiveInspection: () => {
         set({ activeInspection: null });
       },
@@ -170,7 +210,7 @@ export const useInspectionStore = create<InspectionStore>()(
         }
       },
 
-      addBlock: (l1, l2, l3, remarks = '', allowance, type = '1', pricePerCbm, photoUrl, photoUrls) => {
+      addBlock: (l1, l2, l3, remarks = '', allowance, type = '1', pricePerCbm, photoUrl, photoUrls, photoRotations) => {
         const { activeInspection } = get();
         if (!activeInspection) return;
         const { header, blocks } = activeInspection;
@@ -189,7 +229,8 @@ export const useInspectionStore = create<InspectionStore>()(
           type,
           pricePerCbm,
           photoUrl,
-          photoUrls
+          photoUrls,
+          photoRotations
         );
         const newBlocks = [...blocks, block];
         set({
@@ -203,7 +244,7 @@ export const useInspectionStore = create<InspectionStore>()(
         setTimeout(() => get().syncActiveToDb(), 100);
       },
 
-      updateBlock: (blockId, l1, l2, l3, remarks, allowance, type, pricePerCbm, photoUrl, photoUrls) => {
+      updateBlock: (blockId, l1, l2, l3, remarks, allowance, type, pricePerCbm, photoUrl, photoUrls, photoRotations) => {
         const { activeInspection } = get();
         if (!activeInspection) return;
         const { header } = activeInspection;
@@ -221,7 +262,8 @@ export const useInspectionStore = create<InspectionStore>()(
               type !== undefined ? type : b.type || '1',
               pricePerCbm !== undefined ? pricePerCbm : b.pricePerCbm,
               photoUrl !== undefined ? photoUrl : b.photoUrl,
-              photoUrls !== undefined ? photoUrls : b.photoUrls
+              photoUrls !== undefined ? photoUrls : b.photoUrls,
+              photoRotations !== undefined ? photoRotations : b.photoRotations
             )
             : b
         );
@@ -645,7 +687,7 @@ export const useInspectionStore = create<InspectionStore>()(
     }),
     {
       name: 'quarry-inspection-storage',
-      version: 4, // bump this to wipe all cached data across all browsers
+      version: 5, // bump this to wipe all cached data across all browsers
       onRehydrateStorage: () => async (state) => {
         if (!state) return;
         state.checkDraftExpiration();

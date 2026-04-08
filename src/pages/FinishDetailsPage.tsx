@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { GlassContainer } from '@/components/ui/glass-container';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, FileDown, Ship, Wallet, Box, Package, Camera, X, Images } from 'lucide-react';
+import { ArrowLeft, FileDown, Ship, Wallet, Box, Package, Camera, X, Images, RotateCw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 export default function FinishDetailsPage() {
@@ -139,6 +139,13 @@ export default function FinishDetailsPage() {
         updateInspectionPhotos(newPhotos);
     };
 
+    const handleRotatePhoto = (url: string) => {
+        const currentRotations = inspection?.header.photoRotations || {};
+        const currentRot = currentRotations[url] || 0;
+        const newRot = (currentRot + 90) % 360;
+        useInspectionStore.getState().updateHeaderPhotoRotation(url, newRot);
+    };
+
     return (
         <div className="min-h-screen pb-32 pt-6 px-4 max-w-md mx-auto">
             {/* Header */}
@@ -255,15 +262,25 @@ export default function FinishDetailsPage() {
                                     <img 
                                         src={url} 
                                         alt={`Evidence ${idx + 1}`} 
-                                        className="h-full w-full object-cover transition-transform group-hover:scale-110" 
+                                        className="h-full w-full object-cover transition-all" 
+                                        style={{ transform: `rotate(${inspection.header.photoRotations?.[url] || 0}deg)` }}
                                     />
-                                    <button
-                                        type="button"
-                                        onClick={() => removePhoto(idx)}
-                                        className="absolute top-1 right-1 bg-destructive/90 text-destructive-foreground rounded-full p-1 shadow-lg hover:scale-110 transition-transform z-20"
-                                    >
-                                        <X className="h-2.5 w-2.5" />
-                                    </button>
+                                    <div className="absolute top-1 right-1 flex gap-1 z-20">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRotatePhoto(url)}
+                                            className="bg-primary/90 text-primary-foreground rounded-full p-1.5 shadow-lg hover:scale-110 transition-transform"
+                                        >
+                                            <RotateCw className="h-2.5 w-2.5" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => removePhoto(idx)}
+                                            className="bg-destructive/90 text-destructive-foreground rounded-full p-1.5 shadow-lg hover:scale-110 transition-transform"
+                                        >
+                                            <X className="h-2.5 w-2.5" />
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                             

@@ -91,6 +91,7 @@ export interface InspectionHeader {
   // Dynamic Type Presets
   blockTypes: BlockTypePreset[];
   inspectionPhotos?: string[];
+  photoRotations?: Record<string, number>;
 };
 
 export interface Block {
@@ -107,6 +108,7 @@ export interface Block {
   type?: string; // "1", "2", "3" etc.
   photoUrl?: string;
   photoUrls?: string[];
+  photoRotations?: Record<string, number>;
   pricePerCbm?: number;
 }
 

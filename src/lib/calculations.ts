@@ -52,7 +52,8 @@ export function buildBlock(
   type: string = '1',
   blockPricePerCbm?: number,
   photoUrl?: string,
-  photoUrls?: string[]
+  photoUrls?: string[],
+  photoRotations?: Record<string, number>
 ): Block {
   const finalAllowance = resolveAllowance(type, header, blockAllowance);
   
@@ -81,7 +82,7 @@ export function buildBlock(
   }
 
   const value = calcValue(netCbm, finalPrice);
-  return { id, blockNo, l1, l2, l3, grossCbm, netCbm, value, remarks, allowance: finalAllowance, type, photoUrl, photoUrls, pricePerCbm: finalPrice };
+  return { id, blockNo, l1, l2, l3, grossCbm, netCbm, value, remarks, allowance: finalAllowance, type, photoUrl, photoUrls, photoRotations, pricePerCbm: finalPrice };
 }
 
 export function recalcBlock(block: Block, header: any, newBlockNo?: number): Block {
@@ -97,7 +98,8 @@ export function recalcBlock(block: Block, header: any, newBlockNo?: number): Blo
     block.type || '1',
     block.pricePerCbm,
     block.photoUrl,
-    block.photoUrls
+    block.photoUrls,
+    block.photoRotations
   );
 }
 
