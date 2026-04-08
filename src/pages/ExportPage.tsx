@@ -1432,7 +1432,7 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos, createdAt }: any) {
 
                 {/* Measurement Table */}
                 <div className="px-4 mb-8">
-                  <div className="bg-white border-2 border-black shadow-xl overflow-hidden rounded-sm">
+                  <div className="bg-white border-2 border-black print:shadow-none shadow-xl overflow-hidden rounded-sm">
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                       <thead>
                         <tr>
@@ -1498,15 +1498,17 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos, createdAt }: any) {
                    
                    <div className="flex-1 flex items-center justify-center w-full">
                       <div 
-                         className="border-[3pt] border-black shadow-2xl bg-white p-[2mm]"
+                         className="border-[3pt] border-black print:shadow-none shadow-2xl bg-white p-[2mm]"
+                         style={{ backgroundColor: '#ffffff' }}
                       >
                          <img 
                            src={url} 
                            alt={`Block ${b.blockNo} - Side ${String.fromCharCode(65 + pIdx)}`} 
-                           className="block h-auto w-auto max-w-full transition-all" 
+                           className="block h-auto w-auto max-w-full" 
                            style={{ 
                              maxHeight: '750px', 
-                             transform: `rotate(${h.photoRotations?.[url] || 0}deg)` 
+                             transform: `rotate(${h.photoRotations?.[url] || 0}deg)`,
+                             backgroundColor: '#ffffff'
                            }} 
                          />
                       </div>
