@@ -66,7 +66,7 @@ export default function NewMarking() {
       ...data,
       pricePerCbm: price,
       startingBlockNumber: Number(data.startingBlockNumber || 1),
-      blockTypes: [{ id: '1', allowance, pricePerCbm: price }]
+      blockTypes: [{ id: '1', name: 'T1', allowance, pricePerCbm: price }]
     };
 
     startNewInspection(headerData);

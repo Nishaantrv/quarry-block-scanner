@@ -97,7 +97,7 @@ export const useInspectionStore = create<InspectionStore>()(
           id: generateId(),
           header: {
             ...header,
-            blockTypes: header.blockTypes?.length ? header.blockTypes : [{ id: '1', allowance: 15, pricePerCbm: header.pricePerCbm || 0 }],
+            blockTypes: header.blockTypes?.length ? header.blockTypes : [{ id: '1', name: 'T1', allowance: 15, pricePerCbm: header.pricePerCbm || 0 }],
           },
           blocks: [],
           totals: { totalBlocks: 0, totalGrossCbm: 0, totalNetCbm: 0, totalValue: 0 },

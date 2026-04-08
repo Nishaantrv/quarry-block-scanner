@@ -565,7 +565,7 @@ function DocumentEditor({ h, cp, blocks, onHeaderChange, onProfileChange, onBloc
                               : "bg-muted text-muted-foreground hover:bg-muted/80"
                           )}
                         >
-                          T{preset.id}
+                          {preset.name || `T${preset.id}`}
                         </button>
                       ))}
                     </div>
@@ -1189,7 +1189,7 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos, createdAt }: any) {
           <div className="px-4 mb-6 flex gap-8 justify-center">
             {(h.blockTypes || []).map((type: any) => (
               <div key={type.id} className="text-[11pt] font-black uppercase text-[#1a365d] flex items-center gap-2">
-                <span className="bg-[#1a365d] text-white px-2 py-0.5 rounded text-[8pt]">TYPE {type.id}</span>
+                <span className="bg-[#1a365d] text-white px-2 py-0.5 rounded text-[8pt]">{type.name || `TYPE ${type.id}`}</span>
                 <span>=</span>
                 <span className="text-red-600 italic">{type.allowance} CM</span>
               </div>
@@ -1209,7 +1209,7 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos, createdAt }: any) {
                 <div key={typePreset.id} className="space-y-3">
                   <div className="flex items-center gap-4">
                     <div className="bg-[#1a365d] text-white px-4 py-1.5 font-black uppercase tracking-[0.2em] text-[10pt] border-2 border-black shadow-[4px_4px_0px_rgba(0,0,0,1)]">
-                      TYPE {typePreset.id} BLOCKS
+                      {(typePreset.name || `TYPE ${typePreset.id}`).toUpperCase()} BLOCKS
                     </div>
                     <div className="h-[2pt] flex-1 bg-black"></div>
                   </div>
@@ -1241,7 +1241,7 @@ function NormalReportBody({ blocks, cp, h, inspectionPhotos, createdAt }: any) {
                       })}
                       <tr style={{ background: '#f1f5f9', fontWeight: '900', borderTop: '2.5pt solid black' }}>
                         <td colSpan={4} style={{ ...cellStyle, textAlign: 'right', paddingRight: '24px', color: '#1a365d', textTransform: 'uppercase', fontSize: '10pt' }}>
-                          TYPE {typePreset.id} TOTAL ({String(typeBlocks.length).padStart(2, '0')} BLOCKS):
+                          {typePreset.name || `TYPE ${typePreset.id}`} TOTAL ({String(typeBlocks.length).padStart(2, '0')} BLOCKS):
                         </td>
                         <td style={{ ...cellStyle, fontSize: '13pt', color: '#1a365d', background: '#e2e8f0' }}>{typeTotalCbm.toFixed(3)}</td>
                       </tr>

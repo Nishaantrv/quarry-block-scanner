@@ -193,18 +193,18 @@ export default function MarkingPage() {
     setTimeout(() => setLastAdded(null), 2500);
   };
 
-  const confirmEditType = (allowance: number, pricePerCbm: number, startingNumber: number) => {
+  const confirmEditType = (allowance: number, pricePerCbm: number, startingNumber: number, name: string) => {
     const types = inspection.header.blockTypes || [];
-    const exists = types.some(p => p.id === activeType);
+    const exists = types.some(p => String(p.id) === String(activeType));
     if (!exists) {
       // Adding a brand-new type
-      addBlockType({ id: activeType, allowance, pricePerCbm, startingNumber });
-      toast({ title: `Type T${activeType} Added`, description: `Allowance: ${allowance}cm, Price: ${pricePerCbm}, Start: #${startingNumber}` });
+      addBlockType({ id: activeType, name, allowance, pricePerCbm, startingNumber });
+      toast({ title: `Type ${name} Added`, description: `Allowance: ${allowance}cm, Price: ${pricePerCbm}, Start: #${startingNumber}` });
     } else {
       // Updating an existing type
-      updateBlockType({ id: activeType, allowance, pricePerCbm, startingNumber });
+      updateBlockType({ id: activeType, name, allowance, pricePerCbm, startingNumber });
       setBlockType(activeType); // Ensure numbering logic picks up the change
-      toast({ title: `Type T${activeType} Updated`, description: `Allowance: ${allowance}cm, Price: ${pricePerCbm}, Start: #${startingNumber}` });
+      toast({ title: `Type ${name} Updated`, description: `Allowance: ${allowance}cm, Price: ${pricePerCbm}, Start: #${startingNumber}` });
     }
     setShowEditTypeModal(false);
   };
@@ -323,7 +323,7 @@ export default function MarkingPage() {
                     : "text-muted-foreground hover:bg-muted"
                 )}
               >
-                T{p.id}
+                {p.name || `T${p.id}`}
                 {activeType === p.id && <Edit3 className="w-2.5 h-2.5" />}
               </button>
             ))}
@@ -356,7 +356,7 @@ export default function MarkingPage() {
           <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
             <div className={cn("px-3 py-1.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wide flex items-center gap-2", isEditing ? "bg-amber-500/10 text-amber-500 border border-amber-500/20" : "bg-primary/10 text-primary border border-primary/20 shadow-sm")}>
               {isEditing ? <Edit3 className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-              {isEditing ? `Modifying #${currentIndex + 1}` : `New Block #${nextBlockNo}`}
+              {isEditing ? `Modifying #${currentIndex + 1}` : `New Block ${typePreset?.name || ''} #${nextBlockNo}`}
             </div>
 
           </div>
@@ -385,7 +385,7 @@ export default function MarkingPage() {
 
           {/* Block ID Badge */}
           <div className="absolute top-4 left-4 bg-background/80 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-lg shadow-sm z-20">
-            <span className="text-[10px] uppercase font-bold text-muted-foreground mr-2">Block</span>
+            <span className="text-[10px] uppercase font-bold text-muted-foreground mr-2">{typePreset?.name || 'Block'}</span>
             <span className="text-xl font-black text-primary">#{String(displayBlockNo).padStart(3, '0')}</span>
           </div>
 
@@ -836,7 +836,7 @@ interface EditTypeModalProps {
   header: InspectionHeader;
   activeType: string;
   onClose: () => void;
-  onConfirm: (allowance: number, price: number, startingNumber: number) => void;
+  onConfirm: (allowance: number, price: number, startingNumber: number, name: string) => void;
 }
 
 function EditTypeModal({ header, activeType, onClose, onConfirm }: EditTypeModalProps) {
@@ -844,8 +844,9 @@ function EditTypeModal({ header, activeType, onClose, onConfirm }: EditTypeModal
   const isNew = !existingPreset;
   // For new types, pre-fill with the last type's values as a template
   const lastPreset = header.blockTypes[header.blockTypes.length - 1];
-  const preset = existingPreset || { allowance: lastPreset?.allowance || 15, pricePerCbm: lastPreset?.pricePerCbm || 0, startingNumber: lastPreset?.startingNumber || 1 };
+  const preset = existingPreset || { name: `T${activeType}`, allowance: lastPreset?.allowance || 15, pricePerCbm: lastPreset?.pricePerCbm || 0, startingNumber: lastPreset?.startingNumber || 1 };
 
+  const [name, setName] = useState(preset.name || `T${activeType}`);
   const [allowance, setAllowance] = useState(String(preset.allowance));
   const [price, setPrice] = useState(String(preset.pricePerCbm || 0));
   const [startingNumber, setStartingNumber] = useState(String(preset.startingNumber || 1));
@@ -860,11 +861,22 @@ function EditTypeModal({ header, activeType, onClose, onConfirm }: EditTypeModal
           <div className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider mb-2", isNew ? "bg-primary/10 text-primary" : "bg-amber-500/10 text-amber-600")}>
             {isNew ? '+ New Type' : 'Edit Type'}
           </div>
-          <h2 className="text-xl font-black uppercase tracking-tight">Type T{activeType}</h2>
-          <p className="text-xs text-muted-foreground mt-1">{isNew ? 'Set the allowance and price for this new preset' : 'Update allowance and price for this preset'}</p>
+          <h2 className="text-xl font-black uppercase tracking-tight">{name || `Type T${activeType}`}</h2>
+          <p className="text-xs text-muted-foreground mt-1">{isNew ? 'Set name, allowance and price for this new preset' : 'Update name, allowance and price for this preset'}</p>
         </div>
 
         <div className="p-6 space-y-5">
+          <div className="space-y-1.5">
+            <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground pl-1">
+              Type Name (e.g. T1, FRESH, LOT)
+            </Label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="h-14 text-xl font-black uppercase bg-card border-2 border-primary/20 focus:border-primary"
+              placeholder={`T${activeType}`}
+            />
+          </div>
           <div className="space-y-1.5">
             <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground pl-1">
               Allowance (cm)
@@ -907,10 +919,10 @@ function EditTypeModal({ header, activeType, onClose, onConfirm }: EditTypeModal
             Cancel
           </Button>
           <Button 
-            onClick={() => onConfirm(parseFloat(allowance) || 0, parseFloat(price) || 0, parseInt(startingNumber) || 1)}
+            onClick={() => onConfirm(parseFloat(allowance) || 0, parseFloat(price) || 0, parseInt(startingNumber) || 1, name)}
             className="flex-[2] h-14 rounded-2xl font-black uppercase tracking-wider shadow-lg shadow-primary/20"
           >
-            {isNew ? `Add T${activeType}` : `Save T${activeType}`}
+            {isNew ? `Add ${name}` : `Save ${name}`}
           </Button>
         </div>
       </div>
