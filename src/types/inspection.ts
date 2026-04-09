@@ -81,6 +81,8 @@ export interface InspectionHeader {
   exporterRefNumber: string;
   hsCode?: string;
   countryOfOrigin?: string;
+  buyerOrderNoAndDate?: string;
+  invoiceDate?: string;
   // Inspection settings
   startingBlockNumber: number; // default 1
   // Stone description
@@ -94,6 +96,7 @@ export interface InspectionHeader {
   blockTypes: BlockTypePreset[];
   inspectionPhotos?: string[];
   photoRotations?: Record<string, number>;
+  enableEndToEnd: boolean;
 };
 
 export interface Block {
@@ -113,6 +116,10 @@ export interface Block {
   photoRotations?: Record<string, number>;
   pricePerCbm?: number;
   date?: string;
+  l1EndToEnd?: number;
+  l2EndToEnd?: number;
+  l3EndToEnd?: number;
+  defectDescription?: string;
 }
 
 export interface InspectionTotals {
@@ -138,6 +145,10 @@ export interface Inspection {
     remarks: string;
     type: string;
     manualAllowance: string;
+    l1EndToEnd?: string;
+    l2EndToEnd?: string;
+    l3EndToEnd?: string;
+    defectDescription?: string;
   };
 }
 
@@ -164,13 +175,16 @@ export const DEFAULT_HEADER: InspectionHeader = {
   quarryCode: '',
   calculationMode: 'net',
   hsCode: '',
-  countryOfOrigin: '',
+  countryOfOrigin: 'INDIA',
+  buyerOrderNoAndDate: '',
+  invoiceDate: '',
   abstractDetails: '',
   blockTypes: [
     { id: '1', name: 'T1', allowance: 15, pricePerCbm: 0, startingNumber: 1 },
     { id: '2', name: 'T2', allowance: 15, pricePerCbm: 0, startingNumber: 1 },
     { id: '3', name: 'T3', allowance: 15, pricePerCbm: 0, startingNumber: 1 },
   ],
+  enableEndToEnd: false,
 };
 
 export const DEFAULT_COMPANY_PROFILE: CompanyProfile = {

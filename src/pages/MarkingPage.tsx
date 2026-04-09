@@ -34,6 +34,10 @@ export default function MarkingPage() {
   const [photoRotations, setPhotoRotations] = useState<Record<string, number>>({});
   const [isUploading, setIsUploading] = useState(false);
   const [lastAdded, setLastAdded] = useState<{ blockNo: number; dims: string; netCbm: string } | null>(null);
+  const [l1EndToEnd, setL1EndToEnd] = useState('');
+  const [l2EndToEnd, setL2EndToEnd] = useState('');
+  const [l3EndToEnd, setL3EndToEnd] = useState('');
+  const [defectDescription, setDefectDescription] = useState('');
 
   // Navigation: -1 means "new block mode", 0..n means viewing block at that index
   const [currentIndex, setCurrentIndex] = useState(-1);
@@ -57,6 +61,10 @@ export default function MarkingPage() {
       setL3(inspection.draftBlock.l3);
       setRemarks(inspection.draftBlock.remarks);
       setBlockType(inspection.draftBlock.type);
+      if (inspection.draftBlock.l1EndToEnd) setL1EndToEnd(inspection.draftBlock.l1EndToEnd);
+      if (inspection.draftBlock.l2EndToEnd) setL2EndToEnd(inspection.draftBlock.l2EndToEnd);
+      if (inspection.draftBlock.l3EndToEnd) setL3EndToEnd(inspection.draftBlock.l3EndToEnd);
+      if (inspection.draftBlock.defectDescription) setDefectDescription(inspection.draftBlock.defectDescription);
     }
   }, [inspection, navigate, currentIndex]);
 
@@ -65,12 +73,16 @@ export default function MarkingPage() {
     if (currentIndex === -1 && inspection) {
         const timer = setTimeout(() => {
             updateDraftBlock({
-                l1, l2, l3, remarks, type: blockType, manualAllowance: ''
+                l1, l2, l3, remarks, type: blockType, manualAllowance: '',
+                l1EndToEnd: l1EndToEnd || undefined,
+                l2EndToEnd: l2EndToEnd || undefined,
+                l3EndToEnd: l3EndToEnd || undefined,
+                defectDescription: defectDescription || undefined,
             });
         }, 1000);
         return () => clearTimeout(timer);
     }
-  }, [l1, l2, l3, remarks, blockType, currentIndex, inspection?.id]);
+  }, [l1, l2, l3, remarks, blockType, l1EndToEnd, l2EndToEnd, l3EndToEnd, defectDescription, currentIndex, inspection?.id]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -114,6 +126,10 @@ export default function MarkingPage() {
     setBlockType(block.type || '1');
     setPhotoUrls(block.photoUrls || (block.photoUrl ? [block.photoUrl] : []));
     setPhotoRotations(block.photoRotations || {});
+    setL1EndToEnd(block.l1EndToEnd !== undefined ? String(block.l1EndToEnd) : '');
+    setL2EndToEnd(block.l2EndToEnd !== undefined ? String(block.l2EndToEnd) : '');
+    setL3EndToEnd(block.l3EndToEnd !== undefined ? String(block.l3EndToEnd) : '');
+    setDefectDescription(block.defectDescription || '');
     setCurrentIndex(index);
   };
 
@@ -136,7 +152,22 @@ export default function MarkingPage() {
     const v2 = parseFloat(l2);
     const v3 = parseFloat(l3);
     if (!isNaN(v1) && !isNaN(v2) && !isNaN(v3) && v1 > 0 && v2 > 0 && v3 > 0) {
-      updateBlock(currentBlock!.id, v1, v2, v3, remarks, currentBlock?.allowance, blockType as any, currentBlock?.pricePerCbm, undefined, photoUrls, photoRotations);
+      updateBlock(
+        currentBlock!.id, 
+        v1, v2, v3, 
+        remarks, 
+        currentBlock?.allowance, 
+        blockType as any, 
+        currentBlock?.pricePerCbm, 
+        undefined, 
+        photoUrls, 
+        photoRotations, 
+        undefined,
+        parseFloat(l1EndToEnd) || undefined,
+        parseFloat(l2EndToEnd) || undefined,
+        parseFloat(l3EndToEnd) || undefined,
+        defectDescription
+      );
     }
   };
 
@@ -148,6 +179,10 @@ export default function MarkingPage() {
     setBlockType('1');
     setPhotoUrls([]);
     setPhotoRotations({});
+    setL1EndToEnd('');
+    setL2EndToEnd('');
+    setL3EndToEnd('');
+    setDefectDescription('');
     setCurrentIndex(-1);
     l1Ref.current?.focus();
   };
@@ -172,7 +207,21 @@ export default function MarkingPage() {
     const allowanceValue = preset.allowance;
     const priceValue = preset.pricePerCbm;
 
-    addBlock(v1, v2, v3, remarks, allowanceValue, activeType, priceValue, undefined, photoUrls, photoRotations);
+    addBlock(
+      v1, v2, v3, 
+      remarks, 
+      allowanceValue, 
+      activeType, 
+      priceValue, 
+      undefined, 
+      photoUrls, 
+      photoRotations, 
+      undefined,
+      parseFloat(l1EndToEnd) || undefined,
+      parseFloat(l2EndToEnd) || undefined,
+      parseFloat(l3EndToEnd) || undefined,
+      defectDescription
+    );
 
     // Feedback calculations
     const n1 = Math.max(v1 - allowanceValue, 0);
@@ -187,7 +236,8 @@ export default function MarkingPage() {
     });
 
     if (navigator.vibrate) navigator.vibrate(50);
-    setL1(''); setL2(''); setL3(''); setRemarks(''); setPhotoUrls([]); setPhotoRotations({});
+    setL1(''); setL2(''); setL3(''); setRemarks(''); setPhotoUrls([]); setPhotoRotations([]);
+    setL1EndToEnd(''); setL2EndToEnd(''); setL3EndToEnd(''); setDefectDescription('');
     l1Ref.current?.focus();
     updateDraftBlock(undefined);
     setTimeout(() => setLastAdded(null), 2500);
@@ -479,6 +529,41 @@ export default function MarkingPage() {
               />
             </div>
 
+            {inspection.header.enableEndToEnd && (
+              <div className="space-y-4 pt-4 border-t border-border/50 animate-in fade-in slide-in-from-top-2">
+                <div className="flex items-center gap-2 px-1">
+                  <Ruler className="w-4 h-4 text-primary" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-primary">End-to-End Measurement</span>
+                </div>
+                <div className="grid grid-cols-1 gap-3">
+                  <DimensionInput
+                    label="E2E Length"
+                    value={l1EndToEnd}
+                    onChange={setL1EndToEnd}
+                  />
+                  <DimensionInput
+                    label="E2E Height"
+                    value={l2EndToEnd}
+                    onChange={setL2EndToEnd}
+                  />
+                  <DimensionInput
+                    label="E2E Width"
+                    value={l3EndToEnd}
+                    onChange={setL3EndToEnd}
+                  />
+                </div>
+                <div className="space-y-1.5 px-1">
+                  <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground pl-1">Defects / Everything Else</Label>
+                  <Input
+                    value={defectDescription}
+                    onChange={(e) => setDefectDescription(e.target.value)}
+                    placeholder="Describe defects, inclusions..."
+                    className="h-12 text-sm font-semibold bg-card border-2 border-border focus:border-primary rounded-xl"
+                  />
+                </div>
+              </div>
+            )}
+
             {/* PHOTOS GRID BELOW REMARKS */}
             {photoUrls.length > 0 && (
               <div className="space-y-2 px-1 pt-4 animate-in fade-in slide-in-from-bottom-2">
@@ -744,55 +829,29 @@ function EditHeaderPanel({ header, blocksCount, onClose, onSave }: EditHeaderPan
                   </p>
                 )}
 
-                {/* Calculation Mode */}
-                <div>
-                  <Label className="text-[10px] font-bold uppercase text-muted-foreground mb-3 block">Calculation Mode</Label>
-                  <div className="grid grid-cols-1 gap-3">
-                    <div
-                      onClick={() => setValue('calculationMode', 'net')}
-                      className={cn(
-                        "flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all active:scale-[0.98]",
-                        calculationMode === 'net'
-                          ? "border-primary bg-primary/10 shadow-[0_0_15px_rgba(var(--primary),0.2)]"
-                          : "border-border bg-card/50"
-                      )}
-                    >
-                      <div className={cn("p-1.5 rounded-full", calculationMode === 'net' ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
-                        <Box className="w-4 h-4" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="font-bold text-sm text-foreground">Net (Standard)</div>
-                        <div className="text-xs text-muted-foreground">Apply allowance, standard logic</div>
-                      </div>
-                      {calculationMode === 'net' ? (
-                        <CheckCircle2 className="w-5 h-5 text-primary fill-primary/20" />
-                      ) : (
-                        <Circle className="w-5 h-5 text-muted-foreground/30" />
-                      )}
+                {/* End-to-End Measurement Toggle */}
+                <div className="pt-4 border-t border-border/50">
+                  <div
+                    onClick={() => setValue('enableEndToEnd', !watch('enableEndToEnd'))}
+                    className={cn(
+                      "flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all active:scale-[0.98]",
+                      watch('enableEndToEnd')
+                        ? "border-primary bg-primary/10 shadow-[0_0_15px_rgba(var(--primary),0.2)]"
+                        : "border-border bg-card/50"
+                    )}
+                  >
+                    <div className={cn("p-1.5 rounded-full", watch('enableEndToEnd') ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
+                      <Ruler className="w-4 h-4" />
                     </div>
-
-                    <div
-                      onClick={() => setValue('calculationMode', 'gross')}
-                      className={cn(
-                        "flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all active:scale-[0.98]",
-                        calculationMode === 'gross'
-                          ? "border-primary bg-primary/10 shadow-[0_0_15px_rgba(var(--primary),0.2)]"
-                          : "border-border bg-card/50"
-                      )}
-                    >
-                      <div className={cn("p-1.5 rounded-full", calculationMode === 'gross' ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
-                        <Box className="w-4 h-4" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="font-bold text-sm text-foreground">Gross (Round Up)</div>
-                        <div className="text-xs text-muted-foreground">No allowance, round UP 3 decimals</div>
-                      </div>
-                      {calculationMode === 'gross' ? (
-                        <CheckCircle2 className="w-5 h-5 text-primary fill-primary/20" />
-                      ) : (
-                        <Circle className="w-5 h-5 text-muted-foreground/30" />
-                      )}
+                    <div className="flex-1">
+                      <div className="font-bold text-sm text-foreground">End-to-End Measurement</div>
+                      <div className="text-xs text-muted-foreground">Show physical dims & defects table</div>
                     </div>
+                    {watch('enableEndToEnd') ? (
+                      <CheckCircle2 className="w-5 h-5 text-primary fill-primary/20" />
+                    ) : (
+                      <Circle className="w-5 h-5 text-muted-foreground/30" />
+                    )}
                   </div>
                 </div>
               </div>

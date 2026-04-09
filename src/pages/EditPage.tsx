@@ -4,7 +4,7 @@ import { useInspectionStore } from '@/store/inspectionStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Trash2, X, Check, FileText, Search, Settings2, Download, Camera, Loader2, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Trash2, X, Check, FileText, Search, Settings2, Download, Camera, Loader2, Image as ImageIcon, Ruler } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,6 +40,10 @@ export default function EditPage() {
   const [editRemarks, setEditRemarks] = useState('');
   const [editAllowance, setEditAllowance] = useState('');
   const [editType, setEditType] = useState<string>('1');
+  const [editL1EndToEnd, setEditL1EndToEnd] = useState('');
+  const [editL2EndToEnd, setEditL2EndToEnd] = useState('');
+  const [editL3EndToEnd, setEditL3EndToEnd] = useState('');
+  const [editDefectDescription, setEditDefectDescription] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -64,6 +68,10 @@ export default function EditPage() {
     setEditRemarks(block.remarks || '');
     setEditAllowance(block.allowance !== undefined ? block.allowance.toString() : '');
     setEditType(block.type || '1');
+    setEditL1EndToEnd(block.l1EndToEnd !== undefined ? block.l1EndToEnd.toString() : '');
+    setEditL2EndToEnd(block.l2EndToEnd !== undefined ? block.l2EndToEnd.toString() : '');
+    setEditL3EndToEnd(block.l3EndToEnd !== undefined ? block.l3EndToEnd.toString() : '');
+    setEditDefectDescription(block.defectDescription || '');
   };
 
   const confirmEdit = () => {
@@ -73,7 +81,25 @@ export default function EditPage() {
     const v3 = parseFloat(editL3);
     const vAllowance = editAllowance === '' ? undefined : parseFloat(editAllowance);
     if (isNaN(v1) || isNaN(v2) || isNaN(v3)) return;
-    updateBlock(editingBlock, v1, v2, v3, editRemarks, vAllowance, editType);
+
+    const block = inspection.blocks.find(b => b.id === editingBlock);
+
+    updateBlock(
+      editingBlock, 
+      v1, v2, v3, 
+      editRemarks, 
+      vAllowance, 
+      editType, 
+      undefined, 
+      undefined, 
+      block?.photoUrls, 
+      block?.photoRotations, 
+      undefined,
+      parseFloat(editL1EndToEnd) || undefined,
+      parseFloat(editL2EndToEnd) || undefined,
+      parseFloat(editL3EndToEnd) || undefined,
+      editDefectDescription
+    );
     setEditingBlock(null);
   };
 
@@ -180,14 +206,37 @@ export default function EditPage() {
                   </div>
                 </div>
                 <div className="mt-3">
-                  <Label className="text-[10px] uppercase font-bold text-muted-foreground pl-1">Remarks</Label>
+                  <Label className="text-[10px] uppercase font-bold text-muted-foreground pl-1">Overall Remarks</Label>
                   <Input
                     value={editRemarks}
                     onChange={(e) => setEditRemarks(e.target.value)}
-                    placeholder="Optional remarks..."
+                    placeholder="Add remarks..."
                     className="h-10 bg-background/50 text-sm font-semibold mt-1"
                   />
                 </div>
+
+                {inspection.header.enableEndToEnd && (
+                  <div className="mt-4 pt-4 border-t border-border/50">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Ruler className="w-3 h-3 text-primary" />
+                      <span className="text-[9px] font-black uppercase tracking-widest text-primary">End-to-End Measurement</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      <EditInput label="E2E L" value={editL1EndToEnd} onChange={setEditL1EndToEnd} />
+                      <EditInput label="E2E H" value={editL2EndToEnd} onChange={setEditL2EndToEnd} />
+                      <EditInput label="E2E W" value={editL3EndToEnd} onChange={setEditL3EndToEnd} />
+                    </div>
+                    <div className="mt-3">
+                      <Label className="text-[10px] uppercase font-bold text-muted-foreground pl-1">Defects / Everything Else</Label>
+                      <Input
+                        value={editDefectDescription}
+                        onChange={(e) => setEditDefectDescription(e.target.value)}
+                        placeholder="Describe defects..."
+                        className="h-10 bg-background/50 text-sm font-semibold mt-1"
+                      />
+                    </div>
+                  </div>
+                )}
                 <div className="mt-4 flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
                   <input
                     type="file"

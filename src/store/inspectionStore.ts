@@ -24,8 +24,8 @@ interface InspectionStore {
   discardActiveInspection: () => void;
   checkDraftExpiration: () => void;
 
-  addBlock: (l1: number, l2: number, l3: number, remarks?: string, allowance?: number, type?: string, pricePerCbm?: number, photoUrl?: string, photoUrls?: string[], photoRotations?: Record<string, number>, date?: string) => void;
-  updateBlock: (blockId: string, l1: number, l2: number, l3: number, remarks?: string, allowance?: number, type?: string, pricePerCbm?: number, photoUrl?: string, photoUrls?: string[], photoRotations?: Record<string, number>, date?: string) => void;
+  addBlock: (l1: number, l2: number, l3: number, remarks?: string, allowance?: number, type?: string, pricePerCbm?: number, photoUrl?: string, photoUrls?: string[], photoRotations?: Record<string, number>, date?: string, l1EndToEnd?: number, l2EndToEnd?: number, l3EndToEnd?: number, defectDescription?: string) => void;
+  updateBlock: (blockId: string, l1: number, l2: number, l3: number, remarks?: string, allowance?: number, type?: string, pricePerCbm?: number, photoUrl?: string, photoUrls?: string[], photoRotations?: Record<string, number>, date?: string, l1EndToEnd?: number, l2EndToEnd?: number, l3EndToEnd?: number, defectDescription?: string) => void;
   updateBlocks: (blocks: Block[]) => void;
   deleteBlock: (blockId: string) => void;
   updateHeader: (header: InspectionHeader) => void;
@@ -210,7 +210,7 @@ export const useInspectionStore = create<InspectionStore>()(
         }
       },
 
-      addBlock: (l1, l2, l3, remarks = '', allowance, type = '1', pricePerCbm, photoUrl, photoUrls, photoRotations, date) => {
+      addBlock: (l1, l2, l3, remarks = '', allowance, type = '1', pricePerCbm, photoUrl, photoUrls, photoRotations, date, l1EndToEnd, l2EndToEnd, l3EndToEnd, defectDescription) => {
         const { activeInspection } = get();
         if (!activeInspection) return;
         const { header, blocks } = activeInspection;
@@ -235,7 +235,11 @@ export const useInspectionStore = create<InspectionStore>()(
           photoUrl,
           photoUrls,
           photoRotations,
-          date || new Date().toLocaleDateString('en-GB')
+          date || new Date().toLocaleDateString('en-GB'),
+          l1EndToEnd,
+          l2EndToEnd,
+          l3EndToEnd,
+          defectDescription
         );
         const newBlocks = [...blocks, block];
         set({
@@ -249,7 +253,7 @@ export const useInspectionStore = create<InspectionStore>()(
         setTimeout(() => get().syncActiveToDb(), 100);
       },
 
-      updateBlock: (blockId, l1, l2, l3, remarks, allowance, type, pricePerCbm, photoUrl, photoUrls, photoRotations, date) => {
+      updateBlock: (blockId, l1, l2, l3, remarks, allowance, type, pricePerCbm, photoUrl, photoUrls, photoRotations, date, l1EndToEnd, l2EndToEnd, l3EndToEnd, defectDescription) => {
         const { activeInspection } = get();
         if (!activeInspection) return;
         const { header } = activeInspection;
@@ -269,7 +273,11 @@ export const useInspectionStore = create<InspectionStore>()(
               photoUrl !== undefined ? photoUrl : b.photoUrl,
               photoUrls !== undefined ? photoUrls : b.photoUrls,
               photoRotations !== undefined ? photoRotations : b.photoRotations,
-              date !== undefined ? date : b.date
+              date !== undefined ? date : b.date,
+              l1EndToEnd !== undefined ? l1EndToEnd : b.l1EndToEnd,
+              l2EndToEnd !== undefined ? l2EndToEnd : b.l2EndToEnd,
+              l3EndToEnd !== undefined ? l3EndToEnd : b.l3EndToEnd,
+              defectDescription !== undefined ? defectDescription : b.defectDescription
             )
             : b
         );
@@ -336,7 +344,11 @@ export const useInspectionStore = create<InspectionStore>()(
             b.photoUrl,
             b.photoUrls,
             b.photoRotations,
-            b.date
+            b.date,
+            b.l1EndToEnd,
+            b.l2EndToEnd,
+            b.l3EndToEnd,
+            b.defectDescription
           )
         );
         set({

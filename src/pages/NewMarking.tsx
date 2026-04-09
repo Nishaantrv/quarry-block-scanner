@@ -213,6 +213,32 @@ export default function NewMarking() {
                   )}
                 </div>
               </div>
+
+              <div className="pt-6 border-t border-border/50">
+                <Label className="text-[10px] font-bold uppercase text-muted-foreground mb-3 block">Special Modes</Label>
+                <div
+                  onClick={() => setValue('enableEndToEnd', !watch('enableEndToEnd'))}
+                  className={cn(
+                    "flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all active:scale-[0.98]",
+                    watch('enableEndToEnd')
+                      ? "border-primary bg-primary/10 shadow-[0_0_15px_rgba(var(--primary),0.2)]"
+                      : "border-border bg-card/50"
+                  )}
+                >
+                  <div className={cn("p-2 rounded-full", watch('enableEndToEnd') ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
+                    <Ruler className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-bold text-foreground">End-to-End Measurement</div>
+                    <div className="text-xs text-muted-foreground">Include physical dims and defects table</div>
+                  </div>
+                  {watch('enableEndToEnd') ? (
+                    <CheckCircle2 className="w-6 h-6 text-primary fill-primary/20" />
+                  ) : (
+                    <Circle className="w-6 h-6 text-muted-foreground/30" />
+                  )}
+                </div>
+              </div>
             </div>
           </GlassContainer>
         </section>
