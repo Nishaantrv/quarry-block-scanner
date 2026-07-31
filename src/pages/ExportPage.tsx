@@ -1382,25 +1382,7 @@ function renderPageTable(items: any[], compactCellStyle: any, compactHeaderStyle
           </React.Fragment>
        );
     } else if (item.kind === 'signature') {
-       result.push(
-          <div key={`sig-${idx}`} className="mt-12 pt-8" style={{ pageBreakInside: 'avoid' }}>
-            <div className="flex justify-between items-end px-4">
-              <div className="space-y-4">
-                 <p className="text-[10px] font-bold text-zinc-400 uppercase italic max-w-[400px]">
-                    * This report serves as an official inspection document generated via Dakshin Scanner App. 
-                    All measurements are net values after allowances.
-                 </p>
-              </div>
-              <div className="text-right">
-                <div style={{ color: '#1a365d' }} className="font-black uppercase text-xl border-b-2 border-black pb-1 mb-4 flex flex-col items-end">
-                   <span className="text-[10px] text-zinc-400 font-bold mb-1">FOR</span>
-                   {cp.companyName}
-                </div>
-                <p className="font-black italic text-[10px] uppercase tracking-widest">Authorized Inspection Signatory</p>
-              </div>
-            </div>
-          </div>
-       );
+       // Signature footer removed as requested
     } else if (item.kind === 'e2e-title' || item.kind === 'e2e-title-cont') {
        if (currentTable.length > 0) {
           if (currentPreset) {
