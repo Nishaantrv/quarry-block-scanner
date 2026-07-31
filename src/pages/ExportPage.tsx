@@ -1345,7 +1345,12 @@ function renderPageTable(items: any[], compactCellStyle: any, compactHeaderStyle
        }
        const displayName = getPresetDisplayName(item.preset, h);
        const customerText = (displayName && displayName !== 'ALLOWANCE') ? displayName : `BLOCKS`;
-       const materialName = (h.stoneType || h.stoneDescription || 'MATERIAL').trim().toUpperCase();
+       
+       let materialName = 'MATERIAL';
+       const typedMaterial = (h.stoneType || h.stoneDescription || '').trim().toUpperCase();
+       if (typedMaterial) {
+         materialName = `MATERIAL - ${typedMaterial}`;
+       }
 
        result.push(
           <div key={`title-${idx}`} className="flex flex-col gap-2 mt-6 first:mt-0 mb-2">
