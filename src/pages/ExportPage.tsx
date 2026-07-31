@@ -1288,44 +1288,8 @@ function PaginatedAbstract({ h, cp, blocks, createdAt, compactCellStyle, compact
 
   items.push({ kind: 'signature' });
 
-  const pages: any[][] = [];
-  let currentPage: any[] = [];
-  let linesCount = 0;
-  const FIRST_PAGE_MAX = 18;
-  const OTHER_PAGE_MAX = 28;
-
-  items.forEach((item) => {
-    let cost = 1;
-    if (item.kind === 'type-title' || item.kind === 'e2e-title') cost = 3; // Title + Table Header
-    if (item.kind === 'type-total' || item.kind === 'e2e-total') cost = 2;
-    if (item.kind === 'signature') cost = 6;
-
-    const limit = pages.length === 0 ? FIRST_PAGE_MAX : OTHER_PAGE_MAX;
-
-    // Force separate page for ETE if requested
-    if (item.kind === 'e2e-title' && currentPage.length > 0) {
-      pages.push(currentPage);
-      currentPage = [];
-      linesCount = 0;
-    } else if (linesCount + cost > limit) {
-      pages.push(currentPage);
-      currentPage = [];
-      linesCount = 0;
-      // If we split a table, we should re-add the header on the next page
-      if (item.kind === 'row') {
-        currentPage.push({ kind: 'type-title-cont', preset: item.preset });
-        linesCount += 2;
-      }
-      if (item.kind === 'e2e-row') {
-        currentPage.push({ kind: 'e2e-title-cont' });
-        linesCount += 2;
-      }
-    }
-    
-    currentPage.push(item);
-    linesCount += cost;
-  });
-  if (currentPage.length > 0) pages.push(currentPage);
+  // No pagination — render everything on a single page
+  const pages: any[][] = [items];
 
   return (
     <>
@@ -1379,8 +1343,7 @@ function renderPageTable(items: any[], compactCellStyle: any, compactHeaderStyle
           result.push(renderActualTable(currentTable, currentPreset, compactCellStyle, compactHeaderStyle, null, h));
           currentTable = [];
        }
-       const displayName = getPresetDisplayName(item.preset, h);
-       const titleText = (displayName && displayName !== 'ALLOWANCE') ? displayName : `BLOCKS`;
+       const titleText = `BLOCKS`;
 
        result.push(
           <div key={`title-${idx}`} className="flex items-center gap-4 mt-6 first:mt-0 mb-2">
@@ -1482,8 +1445,7 @@ function renderPageTable(items: any[], compactCellStyle: any, compactHeaderStyle
 }
 
 function renderActualTable(rows: any[], preset: any, compactCellStyle: any, compactHeaderStyle: any, totalItem?: any, h?: any) {
-  const displayName = getPresetDisplayName(totalItem?.preset || preset, h);
-  const totalText = (displayName && displayName !== 'ALLOWANCE') ? `${displayName} TOTAL` : `TOTAL`;
+  const totalText = `TOTAL`;
 
 
    return (
