@@ -1344,14 +1344,22 @@ function renderPageTable(items: any[], compactCellStyle: any, compactHeaderStyle
           currentTable = [];
        }
        const displayName = getPresetDisplayName(item.preset, h);
-       const titleText = (displayName && displayName !== 'ALLOWANCE') ? displayName : `BLOCKS`;
+       const customerText = (displayName && displayName !== 'ALLOWANCE') ? displayName : `BLOCKS`;
+       const materialName = (h.stoneType || h.stoneDescription || 'MATERIAL').trim().toUpperCase();
 
        result.push(
-          <div key={`title-${idx}`} className="flex items-center gap-4 mt-6 first:mt-0 mb-2">
-            <div className="bg-[#1a365d] text-white px-4 py-1.5 font-black uppercase tracking-[0.2em] text-[10pt] border-2 border-black shadow-[4px_4px_0px_rgba(0,0,0,1)]">
-              {titleText} {item.kind === 'type-title-cont' && '(CONT.)'}
+          <div key={`title-${idx}`} className="flex flex-col gap-2 mt-6 first:mt-0 mb-2">
+            <div className="flex items-center gap-4">
+              <div className="bg-[#1a365d] text-white px-4 py-1.5 font-black uppercase tracking-[0.2em] text-[10pt] border-2 border-black shadow-[4px_4px_0px_rgba(0,0,0,1)]">
+                {materialName} {item.kind === 'type-title-cont' && '(CONT.)'}
+              </div>
+              <div className="h-[2pt] flex-1 bg-black"></div>
             </div>
-            <div className="h-[2pt] flex-1 bg-black"></div>
+            <div>
+              <div className="inline-block bg-[#1a365d] text-white px-3 py-1 font-black uppercase tracking-[0.2em] text-[8pt] border-2 border-black shadow-[3px_3px_0px_rgba(0,0,0,1)]">
+                {customerText}
+              </div>
+            </div>
           </div>
        );
        currentPreset = item.preset;
