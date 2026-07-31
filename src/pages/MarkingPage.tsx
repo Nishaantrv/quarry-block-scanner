@@ -798,6 +798,10 @@ function EditHeaderPanel({ header, blocksCount, onClose, onSave }: EditHeaderPan
               </h3>
               <div className="space-y-3 bg-card/50 rounded-2xl border border-border p-4">
                 <div className="grid grid-cols-2 gap-3">
+                  <PanelField label="Material Name" {...register('stoneType')} placeholder="e.g. GRANITE" />
+                  <PanelField label="Material Desc." {...register('stoneDescription')} placeholder="e.g. ABSOLUTE BLACK" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
                   <PanelField label="Currency" {...register('currency')} />
                   <PanelField label="Price / CBM" type="number" step="any" {...register('pricePerCbm')} />
                   <PanelField label="Payment Terms" {...register('termsOfPayment')} />
