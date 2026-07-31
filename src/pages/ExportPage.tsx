@@ -1236,19 +1236,28 @@ function groupBlocksToSummaries(blocks: any[], marks: string) {
 
 function getPresetDisplayName(preset: any, h: any) {
   if (!preset) return '';
-  const isGeneric = !preset.name || /^T\d+$/i.test(preset.name) || /^TYPE\s*\d+$/i.test(preset.name);
+  const nameStr = (preset.name || '').trim();
+  const isGeneric = !nameStr || /^T\d+$/i.test(nameStr) || /^TYPE\s*\d+$/i.test(nameStr);
   if (!isGeneric) {
-    return preset.name.toUpperCase();
+    return nameStr.toUpperCase();
   }
   const customerName = (h?.consignee || h?.consigneeShort || '').trim().toUpperCase();
-  const activeTypesCount = h?.blockTypes?.length || 1;
+  
+  // Check if multiple distinct allowances exist across defined block types
+  const uniqueAllowances = new Set((h?.blockTypes || []).map((t: any) => t.allowance));
+  const hasMultipleAllowances = uniqueAllowances.size > 1;
+
   if (customerName) {
-    if (activeTypesCount > 1) {
-      return `${customerName} (T${preset.id})`;
+    if (hasMultipleAllowances && preset.allowance) {
+      return `${customerName} (${preset.allowance} CM)`;
     }
     return customerName;
   }
-  return activeTypesCount > 1 ? `TYPE ${preset.id}` : 'ALLOWANCE';
+
+  if (hasMultipleAllowances && preset.allowance) {
+    return `ALLOWANCE (${preset.allowance} CM)`;
+  }
+  return 'ALLOWANCE';
 }
 
 function PaginatedAbstract({ h, cp, blocks, createdAt, compactCellStyle, compactHeaderStyle }: any) {
@@ -1381,7 +1390,7 @@ function renderPageTable(items: any[], compactCellStyle: any, compactHeaderStyle
           currentTable = [];
        }
        const displayName = getPresetDisplayName(item.preset, h);
-       const titleText = displayName ? `${displayName} BLOCKS` : `BLOCKS`;
+       const titleText = (displayName && displayName !== 'ALLOWANCE') ? `${displayName} BLOCKS` : `BLOCKS`;
 
        result.push(
           <div key={`title-${idx}`} className="flex items-center gap-4 mt-6 first:mt-0 mb-2">
@@ -1484,7 +1493,8 @@ function renderPageTable(items: any[], compactCellStyle: any, compactHeaderStyle
 
 function renderActualTable(rows: any[], preset: any, compactCellStyle: any, compactHeaderStyle: any, totalItem?: any, h?: any) {
   const displayName = getPresetDisplayName(totalItem?.preset || preset, h);
-  const totalText = displayName ? `${displayName} TOTAL` : `TOTAL`;
+  const totalText = (displayName && displayName !== 'ALLOWANCE') ? `${displayName} TOTAL` : `TOTAL`;
+
 
    return (
     <table key={preset?.id + (rows[0]?.kind || '')} style={{ width: '100%', borderCollapse: 'collapse', border: '2pt solid black' }} className="mb-4">
