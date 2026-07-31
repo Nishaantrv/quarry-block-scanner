@@ -36,3 +36,4 @@ ALTER TABLE public.inspections DROP CONSTRAINT IF EXISTS inspections_local_id_ke
 DROP INDEX IF EXISTS inspections_local_id_not_null_idx;
 CREATE UNIQUE INDEX inspections_local_id_idx 
   ON public.inspections (local_id);
+ 

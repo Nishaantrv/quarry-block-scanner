@@ -1234,6 +1234,23 @@ function groupBlocksToSummaries(blocks: any[], marks: string) {
   return ranges.join(", ");
 }
 
+function getPresetDisplayName(preset: any, h: any) {
+  if (!preset) return '';
+  const isGeneric = !preset.name || /^T\d+$/i.test(preset.name) || /^TYPE\s*\d+$/i.test(preset.name);
+  if (!isGeneric) {
+    return preset.name.toUpperCase();
+  }
+  const customerName = (h?.consignee || h?.consigneeShort || '').trim().toUpperCase();
+  const activeTypesCount = h?.blockTypes?.length || 1;
+  if (customerName) {
+    if (activeTypesCount > 1) {
+      return `${customerName} (T${preset.id})`;
+    }
+    return customerName;
+  }
+  return activeTypesCount > 1 ? `TYPE ${preset.id}` : 'ALLOWANCE';
+}
+
 function PaginatedAbstract({ h, cp, blocks, createdAt, compactCellStyle, compactHeaderStyle }: any) {
   const items: any[] = [];
   h.blockTypes?.forEach((typePreset: any) => {
@@ -1326,7 +1343,7 @@ function PaginatedAbstract({ h, cp, blocks, createdAt, compactCellStyle, compact
                 <div className="px-4 mb-4 flex gap-6 justify-center flex-wrap">
                   {(h.blockTypes || []).map((type: any) => (
                     <div key={type.id} className="text-[10pt] font-black uppercase text-[#1a365d] flex items-center gap-2">
-                      <span className="bg-[#1a365d] text-white px-2 py-0.5 rounded text-[7pt]">{type.name || `TYPE ${type.id}`}</span>
+                      <span className="bg-[#1a365d] text-white px-2 py-0.5 rounded text-[7pt]">{getPresetDisplayName(type, h)}</span>
                       <span>=</span>
                       <span className="text-[#1a365d] font-bold italic">{type.allowance} CM</span>
                     </div>
@@ -1343,7 +1360,7 @@ function PaginatedAbstract({ h, cp, blocks, createdAt, compactCellStyle, compact
             )}
 
             <div className="px-4 flex-1 space-y-4">
-              {renderPageTable(pageItems, compactCellStyle, compactHeaderStyle, cp)}
+              {renderPageTable(pageItems, compactCellStyle, compactHeaderStyle, cp, h)}
             </div>
           </div>
         </div>
@@ -1352,7 +1369,7 @@ function PaginatedAbstract({ h, cp, blocks, createdAt, compactCellStyle, compact
   );
 }
 
-function renderPageTable(items: any[], compactCellStyle: any, compactHeaderStyle: any, cp: any) {
+function renderPageTable(items: any[], compactCellStyle: any, compactHeaderStyle: any, cp: any, h: any) {
   const result: any[] = [];
   let currentTable: any[] = [];
   let currentPreset: any = null;
@@ -1360,13 +1377,16 @@ function renderPageTable(items: any[], compactCellStyle: any, compactHeaderStyle
   items.forEach((item, idx) => {
     if (item.kind === 'type-title' || item.kind === 'type-title-cont') {
        if (currentTable.length > 0) {
-          result.push(renderActualTable(currentTable, currentPreset, compactCellStyle, compactHeaderStyle));
+          result.push(renderActualTable(currentTable, currentPreset, compactCellStyle, compactHeaderStyle, null, h));
           currentTable = [];
        }
+       const displayName = getPresetDisplayName(item.preset, h);
+       const titleText = displayName ? `${displayName} BLOCKS` : `BLOCKS`;
+
        result.push(
           <div key={`title-${idx}`} className="flex items-center gap-4 mt-6 first:mt-0 mb-2">
             <div className="bg-[#1a365d] text-white px-4 py-1.5 font-black uppercase tracking-[0.2em] text-[10pt] border-2 border-black shadow-[4px_4px_0px_rgba(0,0,0,1)]">
-              {(item.preset.name || `TYPE ${item.preset.id}`).toUpperCase()} BLOCKS {item.kind === 'type-title-cont' && '(CONT.)'}
+              {titleText} {item.kind === 'type-title-cont' && '(CONT.)'}
             </div>
             <div className="h-[2pt] flex-1 bg-black"></div>
           </div>
@@ -1377,11 +1397,11 @@ function renderPageTable(items: any[], compactCellStyle: any, compactHeaderStyle
        currentPreset = item.preset;
     } else if (item.kind === 'type-total') {
        if (currentTable.length > 0) {
-          result.push(renderActualTable(currentTable, currentPreset, compactCellStyle, compactHeaderStyle, item));
+          result.push(renderActualTable(currentTable, currentPreset, compactCellStyle, compactHeaderStyle, item, h));
           currentTable = [];
        } else {
           // Total only
-          result.push(renderActualTable([], currentPreset, compactCellStyle, compactHeaderStyle, item));
+          result.push(renderActualTable([], currentPreset, compactCellStyle, compactHeaderStyle, item, h));
        }
     } else if (item.kind === 'grand-total') {
        result.push(
@@ -1421,7 +1441,7 @@ function renderPageTable(items: any[], compactCellStyle: any, compactHeaderStyle
     } else if (item.kind === 'e2e-title' || item.kind === 'e2e-title-cont') {
        if (currentTable.length > 0) {
           if (currentPreset) {
-            result.push(renderActualTable(currentTable, currentPreset, compactCellStyle, compactHeaderStyle));
+            result.push(renderActualTable(currentTable, currentPreset, compactCellStyle, compactHeaderStyle, null, h));
           } else {
             result.push(renderActualEndToEndTable(currentTable.map(r => r.block), compactCellStyle, compactHeaderStyle));
           }
@@ -1453,7 +1473,7 @@ function renderPageTable(items: any[], compactCellStyle: any, compactHeaderStyle
 
   if (currentTable.length > 0) {
      if (currentPreset) {
-        result.push(renderActualTable(currentTable, currentPreset, compactCellStyle, compactHeaderStyle));
+        result.push(renderActualTable(currentTable, currentPreset, compactCellStyle, compactHeaderStyle, null, h));
      } else {
         result.push(renderActualEndToEndTable(currentTable.map(r => r.block), compactCellStyle, compactHeaderStyle));
      }
@@ -1462,7 +1482,10 @@ function renderPageTable(items: any[], compactCellStyle: any, compactHeaderStyle
   return result;
 }
 
-function renderActualTable(rows: any[], preset: any, compactCellStyle: any, compactHeaderStyle: any, totalItem?: any) {
+function renderActualTable(rows: any[], preset: any, compactCellStyle: any, compactHeaderStyle: any, totalItem?: any, h?: any) {
+  const displayName = getPresetDisplayName(totalItem?.preset || preset, h);
+  const totalText = displayName ? `${displayName} TOTAL` : `TOTAL`;
+
    return (
     <table key={preset?.id + (rows[0]?.kind || '')} style={{ width: '100%', borderCollapse: 'collapse', border: '2pt solid black' }} className="mb-4">
       <thead>
@@ -1490,7 +1513,7 @@ function renderActualTable(rows: any[], preset: any, compactCellStyle: any, comp
         {totalItem && (
           <tr style={{ background: '#f1f5f9', fontWeight: '900', borderTop: '2.5pt solid black' }}>
             <td colSpan={4} style={{ ...compactCellStyle, textAlign: 'right', paddingRight: '24px', color: '#1a365d', textTransform: 'uppercase' }}>
-              {totalItem.preset.name || `TYPE ${totalItem.preset.id}`} TOTAL ({String(totalItem.count).padStart(2, '0')} BLOCKS):
+              {totalText} ({String(totalItem.count).padStart(2, '0')} BLOCKS):
             </td>
             <td style={{ ...compactCellStyle, fontSize: '11pt', color: '#1a365d', background: '#e2e8f0' }}>{totalItem.total.toFixed(3)}</td>
           </tr>

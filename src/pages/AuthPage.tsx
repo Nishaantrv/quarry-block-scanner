@@ -29,14 +29,14 @@ function sanitizeAuthError(message: string): string {
   if (lower.includes('rate limit') || lower.includes('too many requests')) {
     return 'Too many attempts. Please wait a moment and try again.';
   }
-  if (lower.includes('network') || lower.includes('fetch') || lower.includes('failed to fetch')) {
-    return 'Network error. Please check your internet connection and try again.';
+  if (lower.includes('network') || lower.includes('fetch') || lower.includes('failed to fetch') || lower.includes('dns') || lower.includes('name_not_resolved')) {
+    return 'Connection error. Your database might be paused or starting up. Please try again in a minute.';
   }
   if (lower.includes('expired') || lower.includes('token')) {
     return 'Your session has expired. Please sign in again.';
   }
-  if (lower.includes('provider') || lower.includes('oauth')) {
-    return 'Google sign-in failed. Please try again or use email/password.';
+  if (lower.includes('provider') || lower.includes('oauth') || lower.includes('disabled')) {
+    return 'Google sign-in is not enabled or failed. Please check your Supabase dashboard settings or use email/password.';
   }
   // Show a trimmed version of the real message for unknown errors
   return message.length > 0 && message.length < 120 ? message : 'Authentication failed. Please try again.';
@@ -165,14 +165,17 @@ export default function AuthPage() {
 
     try {
       setLoading(true);
-      // Ensure clean state before Google redirect
-      await supabase.auth.signOut({ scope: 'local' });
+      // Ensure clean state before Google redirect, but don't let it block
+      try {
+        await supabase.auth.signOut({ scope: 'local' });
+      } catch (e) {
+        console.warn('[Auth] SignOut failed (expected if no session):', e);
+      }
       
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: window.location.origin + '/auth/callback',
-          skipBrowserRedirect: false,
         },
       });
       
@@ -180,14 +183,18 @@ export default function AuthPage() {
         console.error('[Auth] Google Sign-In error:', error);
         recordAttempt();
         toast({ title: 'Error', description: sanitizeAuthError(error.message), variant: 'destructive' });
+      } else if (data?.url) {
+        // Explicitly redirect if for some reason it didn't happen
+        window.location.href = data.url;
       }
     } catch (err) {
       console.error('[Auth] Unexpected error during Google Sign-In:', err);
       recordAttempt();
-      toast({ title: 'Error', description: 'An unexpected error occurred during sign in.', variant: 'destructive' });
+      const message = err instanceof Error ? err.message : 'An unexpected error occurred during sign in.';
+      toast({ title: 'Error', description: sanitizeAuthError(message), variant: 'destructive' });
     } finally {
-      // Note: Loading state usually persists until redirect happens
-      setLoading(false);
+      // Loading state persists until redirect usually
+      setTimeout(() => setLoading(false), 2000);
     }
   };
 
