@@ -1343,7 +1343,8 @@ function renderPageTable(items: any[], compactCellStyle: any, compactHeaderStyle
           result.push(renderActualTable(currentTable, currentPreset, compactCellStyle, compactHeaderStyle, null, h));
           currentTable = [];
        }
-       const titleText = `BLOCKS`;
+       const displayName = getPresetDisplayName(item.preset, h);
+       const titleText = (displayName && displayName !== 'ALLOWANCE') ? displayName : `BLOCKS`;
 
        result.push(
           <div key={`title-${idx}`} className="flex items-center gap-4 mt-6 first:mt-0 mb-2">
