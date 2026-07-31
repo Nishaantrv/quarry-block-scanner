@@ -1348,16 +1348,6 @@ function PaginatedAbstract({ h, cp, blocks, createdAt, compactCellStyle, compact
                     Inspection Report - Abstract
                   </h1>
                 </div>
-
-                <div className="px-4 mb-4 flex gap-6 justify-center flex-wrap">
-                  {(h.blockTypes || []).map((type: any) => (
-                    <div key={type.id} className="text-[10pt] font-black uppercase text-[#1a365d] flex items-center gap-2">
-                      <span className="bg-[#1a365d] text-white px-2 py-0.5 rounded text-[7pt]">{getPresetDisplayName(type, h)}</span>
-                      <span>=</span>
-                      <span className="text-[#1a365d] font-bold italic">{type.allowance} CM</span>
-                    </div>
-                  ))}
-                </div>
               </>
             )}
 
@@ -1390,7 +1380,7 @@ function renderPageTable(items: any[], compactCellStyle: any, compactHeaderStyle
           currentTable = [];
        }
        const displayName = getPresetDisplayName(item.preset, h);
-       const titleText = (displayName && displayName !== 'ALLOWANCE') ? `${displayName} BLOCKS` : `BLOCKS`;
+       const titleText = (displayName && displayName !== 'ALLOWANCE') ? displayName : `BLOCKS`;
 
        result.push(
           <div key={`title-${idx}`} className="flex items-center gap-4 mt-6 first:mt-0 mb-2">
